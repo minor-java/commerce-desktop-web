@@ -1,0 +1,39 @@
+@if (codigos() && codigos().length > 0) {
+  <ul class="codigos-list">
+    @for (codigo of codigos(); track codigo; let i = $index) {
+      <li class="codigo-item">
+        <span class="codigo-texto">{{ codigo }}</span>
+        <div class="codigo-acciones">
+          <input
+            type="number"
+            class="cantidad-input"
+            min="1"
+            max="50"
+            [value]="cantidadDe(codigo)"
+            (input)="onCantidadInput(codigo, $event)"
+            [disabled]="imprimiendo() === codigo"
+            [attr.aria-label]="'Cantidad de etiquetas para ' + codigo"
+          />
+          <button
+            type="button"
+            class="btn-print"
+            (click)="imprimir(codigo)"
+            [disabled]="imprimiendo() === codigo"
+          >
+            @if (imprimiendo() === codigo) { Imprimiendo... } @else { Imprimir }
+          </button>
+          @if (eliminable()) {
+            <button
+              type="button"
+              class="btn-remove"
+              (click)="eliminar.emit(i)"
+              [attr.aria-label]="'Eliminar código ' + codigo"
+            >×</button>
+          }
+        </div>
+      </li>
+    }
+  </ul>
+} @else {
+  <p class="codigos-empty">Este producto no tiene códigos de barras asignados.</p>
+}

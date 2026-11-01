@@ -1,0 +1,302 @@
+<div class="page">
+  <div class="toolbar">
+    <div>
+      <h1>Estilos</h1>
+      <p class="toolbar-hint">
+        Logo, imagen del inicio de sesión y colores de toda la aplicación. Los cambios se ven al instante; guarde para conservarlos.
+        @if (ultimaActualizacion(); as u) {
+          <br />Última modificación: {{ u.fecha | date: 'dd/MM/yyyy HH:mm' }}@if (u.usuario) { por {{ u.usuario }} }
+        }
+      </p>
+    </div>
+    <div class="toolbar-acciones">
+      @if (sinGuardar()) {
+        <span class="badge badge--pendiente" role="status">Cambios sin guardar</span>
+      }
+      <button type="button" class="btn-secondary" (click)="restablecerNeutral()" [disabled]="guardando() || cargando()">
+        Restablecer neutral
+      </button>
+      <button type="button" class="btn-secondary" (click)="descartar()" [disabled]="!sinGuardar() || guardando() || cargando()">
+        Descartar
+      </button>
+      <button type="button" class="btn-primary" (click)="guardar()" [disabled]="!sinGuardar() || guardando() || cargando()">
+        {{ guardando() ? 'Guardando…' : 'Guardar cambios' }}
+      </button>
+    </div>
+  </div>
+
+  @if (errorCarga()) {
+    <div class="error" role="alert">
+      {{ errorCarga() }}
+      <button type="button" class="btn-icon" (click)="cargar()">Reintentar</button>
+    </div>
+  } @else if (cargando()) {
+    <p class="estado" aria-live="polite">Cargando estilos…</p>
+  } @else {
+    <div class="contenido">
+      <form
+        class="columna-form"
+        [formGroup]="form"
+        (ngSubmit)="guardar()"
+        (input)="actualizarVista()"
+        (change)="actualizarVista()"
+        novalidate
+      >
+        <!-- ═══════════════ PALETA ═══════════════ -->
+        <fieldset class="tarjeta">
+          <legend class="tarjeta-titulo">Paleta de colores</legend>
+          <p class="hint-msg">Elija una paleta como punto de partida y ajuste los colores si lo desea.</p>
+          <div class="paletas">
+            @for (p of paletas; track p.id) {
+              <button
+                type="button"
+                class="paleta"
+                [class.paleta--activa]="paletaActiva() === p.id"
+                [attr.aria-pressed]="paletaActiva() === p.id"
+                (click)="aplicarPaleta(p)"
+              >
+                <span class="paleta-muestras" aria-hidden="true">
+                  <span [style.background]="p.colores.colorPrimario"></span>
+                  <span [style.background]="p.colores.colorAcento"></span>
+                  <span [style.background]="p.colores.colorDestacado"></span>
+                  <span [style.background]="p.colores.colorFondo"></span>
+                </span>
+                <span class="paleta-nombre">{{ p.nombre }}</span>
+              </button>
+            }
+          </div>
+        </fieldset>
+
+        <!-- ═══════════════ COLORES ═══════════════ -->
+        <fieldset class="tarjeta">
+          <legend class="tarjeta-titulo">Colores</legend>
+          <div class="colores">
+            @for (c of colores; track c.clave) {
+              <div class="color-fila">
+                <input
+                  type="color"
+                  class="color-selector"
+                  [id]="c.clave + '-selector'"
+                  [value]="colorDe(c.clave)"
+                  (input)="elegirColor(c.clave, $event)"
+                  [attr.aria-label]="'Elegir color ' + c.nombre"
+                />
+                <div class="color-texto">
+                  <label [for]="c.clave">{{ c.nombre }}</label>
+                  <span class="hint-msg" [id]="c.clave + '-ayuda'">{{ c.ayuda }}</span>
+                </div>
+                <input
+                  type="text"
+                  class="color-hex"
+                  [id]="c.clave"
+                  [formControlName]="c.clave"
+                  maxlength="7"
+                  spellcheck="false"
+                  autocomplete="off"
+                  [attr.aria-describedby]="c.clave + '-ayuda'"
+                  [attr.aria-invalid]="form.controls[c.clave].invalid ? 'true' : null"
+                />
+              </div>
+            }
+          </div>
+          @if (!coloresValidos()) {
+            <p class="error-msg" role="alert">Use colores en formato hexadecimal, por ejemplo #1f2937.</p>
+          }
+          @if (avisos().length) {
+            <ul class="avisos" aria-live="polite">
+              @for (a of avisos(); track a) {
+                <li>{{ a }}</li>
+              }
+            </ul>
+          }
+        </fieldset>
+
+        <!-- ═══════════════ LOGO ═══════════════ -->
+        <fieldset class="tarjeta">
+          <legend class="tarjeta-titulo">Logo</legend>
+          <div class="imagen-fila">
+            <div class="imagen-muestra imagen-muestra--logo">
+              @if (logoUrl(); as url) {
+                <img [src]="url" alt="Logo actual" width="92" height="52" />
+              } @else {
+                <span class="hint-msg">Logo neutral</span>
+              }
+            </div>
+            <div class="imagen-acciones">
+              <label class="btn-secondary btn-archivo">
+                {{ logo() ? 'Cambiar logo' : 'Subir logo' }}
+                <input type="file" class="sr-only" accept="image/png,image/jpeg,image/gif,image/bmp" (change)="imagenSeleccionada($event, 'logo')" />
+              </label>
+              @if (logo()) {
+                <button type="button" class="btn-icon btn-icon--danger" (click)="quitarImagen('logo')">Quitar logo</button>
+              }
+            </div>
+          </div>
+          <p class="hint-msg">
+            Se muestra en el encabezado y en el inicio de sesión. Use preferiblemente un PNG con fondo transparente.
+            El logo del recibo impreso se configura aparte, en Impresión.
+          </p>
+        </fieldset>
+
+        <!-- ═══════════════ LOGIN ═══════════════ -->
+        <fieldset class="tarjeta">
+          <legend class="tarjeta-titulo">Inicio de sesión</legend>
+          <div class="imagen-fila">
+            <div class="imagen-muestra imagen-muestra--icono">
+              @if (imagenLoginUrl(); as url) {
+                <img [src]="url" alt="Imagen decorativa actual" width="32" height="32" />
+              } @else {
+                <span class="rombo" aria-hidden="true"></span>
+              }
+            </div>
+            <div class="imagen-acciones">
+              <label class="btn-secondary btn-archivo">
+                {{ imagenLogin() ? 'Cambiar imagen' : 'Subir imagen' }}
+                <input type="file" class="sr-only" accept="image/png,image/jpeg,image/gif,image/bmp" (change)="imagenSeleccionada($event, 'imagenLogin')" />
+              </label>
+              @if (imagenLogin()) {
+                <button type="button" class="btn-icon btn-icon--danger" (click)="quitarImagen('imagenLogin')">Quitar imagen</button>
+              }
+            </div>
+          </div>
+          <p class="hint-msg">Imagen pequeña que adorna la línea bajo el logo (se muestra a 16 px). Sin imagen se usa un rombo.</p>
+
+          @for (t of textos; track t.clave) {
+            <div class="texto-login">
+              <div class="field">
+                <label [for]="t.clave">{{ t.etiqueta }}</label>
+                <input
+                  type="text"
+                  [id]="t.clave"
+                  [formControlName]="t.clave"
+                  [maxlength]="t.max"
+                  [placeholder]="t.placeholder"
+                  [attr.aria-describedby]="t.ayuda ? t.clave + '-ayuda' : null"
+                />
+                @if (t.ayuda) {
+                  <span [id]="t.clave + '-ayuda'" class="hint-msg">{{ t.ayuda }}</span>
+                }
+              </div>
+              <div class="texto-tipografia">
+                <div class="field">
+                  <label [for]="t.fuente">Fuente</label>
+                  <select [id]="t.fuente" [formControlName]="t.fuente">
+                    @for (g of gruposFuentes; track g.tipo) {
+                      <optgroup [label]="g.nombre">
+                        @for (f of g.fuentes; track f.id) {
+                          <option [value]="f.id" [style.font-family]="f.familia">{{ f.nombre }}</option>
+                        }
+                      </optgroup>
+                    }
+                  </select>
+                </div>
+                <div class="field">
+                  <label [for]="t.tamano">Tamaño</label>
+                  <select [id]="t.tamano" [formControlName]="t.tamano">
+                    @for (s of tamanos; track s.id) {
+                      <option [value]="s.id">{{ s.nombre }}</option>
+                    }
+                  </select>
+                </div>
+              </div>
+              <p
+                class="texto-muestra"
+                [class.texto-muestra--mayusculas]="t.clave === 'nombreNegocio'"
+                [class.texto-muestra--cursiva]="t.clave === 'lema' && !muestras()[t.clave].manuscrita"
+                [style.font-family]="muestras()[t.clave].familia"
+                [style.font-size.rem]="muestras()[t.clave].tamanoRem"
+                aria-hidden="true"
+              >{{ textoMuestra(t.clave) }}</p>
+            </div>
+          }
+        </fieldset>
+      </form>
+
+      <!-- ═══════════════ VISTA PREVIA ═══════════════ -->
+      <aside class="columna-preview" aria-label="Vista previa del estilo">
+        <h2 class="seccion-titulo">Vista previa</h2>
+
+        <div class="mock" aria-hidden="true">
+          <div class="mock-header">
+            @if (logoUrl(); as url) {
+              <img [src]="url" alt="" width="46" height="26" />
+            } @else {
+              <svg class="mock-logo-neutral" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9.5 4.5 4h15L21 9.5"/><path d="M3 9.5a3 3 0 0 0 6 0 3 3 0 0 0 6 0 3 3 0 0 0 6 0"/><path d="M5 12.3V20h14v-7.7"/><path d="M10 20v-4.5h4V20"/></svg>
+            }
+            <span class="mock-usuario"><span class="mock-avatar">A</span>Admin</span>
+          </div>
+          <div class="mock-cuerpo">
+            <div class="mock-menu">
+              <span class="mock-menu-seccion">Caja</span>
+              <span class="mock-menu-item mock-menu-item--activo">Nueva venta</span>
+              <span class="mock-menu-item">Historial</span>
+              <span class="mock-menu-item">Productos</span>
+            </div>
+            <div class="mock-pagina">
+              <span class="mock-titulo">Productos</span>
+              <div class="mock-tabla">
+                <span class="mock-fila mock-fila--cabecera"><span>Nombre</span><span>Precio</span></span>
+                <span class="mock-fila"><span>Producto A</span><span>$12.000</span></span>
+                <span class="mock-fila mock-fila--seleccionada"><span>Producto B</span><span>$8.500</span></span>
+                <span class="mock-fila"><span>Producto C</span><span>$3.200</span></span>
+              </div>
+              <span class="mock-campo">Buscar…</span>
+              <span class="mock-botones">
+                <span class="mock-btn mock-btn--primario">Guardar</span>
+                <span class="mock-btn mock-btn--acento">Cobrar</span>
+                <span class="mock-btn mock-btn--secundario">Cancelar</span>
+              </span>
+              <span class="mock-insignia">Admin</span>
+            </div>
+          </div>
+        </div>
+
+        <h2 class="seccion-titulo">Inicio de sesión</h2>
+        <div class="mock-login" aria-hidden="true">
+          <div class="mock-login-marca">
+            @if (logoUrl(); as url) {
+              <img [src]="url" alt="" width="64" height="64" />
+            } @else {
+              <svg class="mock-logo-neutral" xmlns="http://www.w3.org/2000/svg" width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9.5 4.5 4h15L21 9.5"/><path d="M3 9.5a3 3 0 0 0 6 0 3 3 0 0 0 6 0 3 3 0 0 0 6 0"/><path d="M5 12.3V20h14v-7.7"/><path d="M10 20v-4.5h4V20"/></svg>
+            }
+            @if (estilo().nombreNegocio; as nombre) {
+              <span
+                class="mock-login-nombre"
+                [style.font-family]="muestras().nombreNegocio.familia"
+                [style.font-size.rem]="muestras().nombreNegocio.tamanoRem * 0.7"
+              >{{ nombre }}</span>
+            }
+            <span class="mock-login-divisor">
+              <span></span>
+              @if (imagenLoginUrl(); as url) {
+                <img [src]="url" alt="" width="10" height="10" />
+              } @else {
+                <span class="rombo rombo--chico"></span>
+              }
+              <span></span>
+            </span>
+            @if (estilo().lema; as lema) {
+              <span
+                class="mock-login-lema"
+                [class.mock-login-lema--recta]="muestras().lema.manuscrita"
+                [style.font-family]="muestras().lema.familia"
+                [style.font-size.rem]="muestras().lema.tamanoRem * 0.65"
+              >{{ lema }}</span>
+            }
+          </div>
+          <div class="mock-login-form">
+            <span class="mock-login-barra"></span>
+            <span
+              class="mock-login-titulo"
+              [style.font-family]="muestras().tituloBienvenida.familia"
+              [style.font-size.rem]="muestras().tituloBienvenida.tamanoRem * 0.45"
+            >{{ estilo().tituloBienvenida || tituloDefecto }}</span>
+            <span class="mock-campo"></span>
+            <span class="mock-campo"></span>
+            <span class="mock-btn mock-btn--acento mock-btn--ancho">Iniciar sesión</span>
+          </div>
+        </div>
+      </aside>
+    </div>
+  }
+</div>

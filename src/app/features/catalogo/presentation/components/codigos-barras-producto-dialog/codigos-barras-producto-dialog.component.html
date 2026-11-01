@@ -1,0 +1,18 @@
+<div class="backdrop" (click)="onCerrar()" role="dialog" aria-modal="true" [attr.aria-label]="'Códigos de barras de ' + titulo()">
+  <div class="dialog" (click)="$event.stopPropagation()">
+
+    <div class="dialog-header">
+      <h2 class="dialog-title">Códigos de barras — {{ titulo() }}</h2>
+      <button type="button" class="dialog-close" (click)="onCerrar()" aria-label="Cerrar">✕</button>
+    </div>
+
+    <div class="dialog-body">
+      <app-codigos-barras-print-list [codigos]="codigos()" [nombre]="titulo()" />
+    </div>
+
+    <div class="dialog-footer">
+      <button type="button" class="btn-cancel" (click)="onCerrar()">Cerrar</button>
+    </div>
+
+  </div>
+</div>

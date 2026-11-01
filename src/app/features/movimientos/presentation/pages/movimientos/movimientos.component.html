@@ -1,0 +1,155 @@
+﻿<div class="page">
+  <div class="toolbar">
+    <h2>Movimientos</h2>
+  </div>
+
+  @if (estadoActual().comboConfirmando; as combo) {
+    <div class="combo-overlay" role="dialog" aria-modal="true" aria-labelledby="combo-dialog-title">
+      <div class="combo-dialog">
+        <h3 id="combo-dialog-title" class="combo-dialog__title">Reverso de combo</h3>
+        <p class="combo-dialog__body">
+          Este movimiento pertenece a un combo. Al continuar se reversarán
+          <strong>todos los ítems del combo</strong> asociados a esta venta.
+        </p>
+        <div class="combo-dialog__actions">
+          <button
+            class="btn-combo-confirmar"
+            type="button"
+            [disabled]="estadoActual().reversandoId !== null"
+            (click)="confirmarReversoCombo()"
+          >
+            {{ estadoActual().reversandoId !== null ? 'Procesando...' : 'Confirmar reverso' }}
+          </button>
+          <button
+            class="btn-combo-cancelar"
+            type="button"
+            [disabled]="estadoActual().reversandoId !== null"
+            (click)="cancelarReversoCombo()"
+          >
+            Cancelar
+          </button>
+        </div>
+      </div>
+    </div>
+  }
+
+  <div class="card">
+    <div class="tabs" role="tablist" aria-label="Tipo de movimiento">
+      @for (tab of tabsList; track tab.tipo) {
+        <button
+          role="tab"
+          [id]="'tab-' + tab.tipo"
+          [attr.aria-selected]="activeTab() === tab.tipo"
+          [attr.aria-controls]="'panel-' + tab.tipo"
+          [class.active]="activeTab() === tab.tipo"
+          (click)="seleccionarTab(tab.tipo)"
+        >
+          {{ tab.label }}
+        </button>
+      }
+    </div>
+
+    <div
+      class="tab-panel"
+      role="tabpanel"
+      [id]="'panel-' + activeTab()"
+      [attr.aria-labelledby]="'tab-' + activeTab()"
+    >
+      <div class="filter-bar">
+        <div class="filter-group">
+          <label for="fecha-desde">Fecha desde</label>
+          <input
+            type="date"
+            id="fecha-desde"
+            [max]="hoy"
+            [value]="estadoActual().fechaDesde"
+            (change)="onFechaDesdeChange($event)"
+          />
+        </div>
+        <div class="filter-group">
+          <label for="fecha-hasta">Fecha hasta</label>
+          <input
+            type="date"
+            id="fecha-hasta"
+            [max]="hoy"
+            [value]="estadoActual().fechaHasta"
+            (change)="onFechaHastaChange($event)"
+          />
+        </div>
+        @if (estadoActual().fechaError) {
+          <p class="fecha-error" role="alert">{{ estadoActual().fechaError }}</p>
+        }
+        <button class="btn-secondary" (click)="limpiarFiltros()">Limpiar filtros</button>
+      </div>
+
+      @if (estadoActual().error) {
+        <div class="error" role="alert">{{ estadoActual().error }}</div>
+      }
+
+      <div class="table-wrapper">
+        <table [attr.aria-label]="'Listado de ' + tabActual().label">
+          <thead>
+            <tr>
+              <th scope="col">Nombre producto</th>
+              <th scope="col" class="col-num">Cantidad</th>
+              <th scope="col" class="col-num">Costo unitario</th>
+              <th scope="col" class="col-num">Costo total</th>
+              <th scope="col" class="col-num">Referencia id</th>
+              <th scope="col" class="col-fecha">Fecha registro</th>
+              <th scope="col" class="col-accion">Acción</th>
+            </tr>
+          </thead>
+          <tbody>
+            @if (estadoActual().cargando) {
+              <tr>
+                <td colspan="7" class="state-cell" aria-live="polite">Cargando...</td>
+              </tr>
+            } @else {
+              @for (item of estadoActual().items; track item.id) {
+                <tr>
+                  <td>
+                    {{ item.producto.nombre }}
+                    @if (item.comboId !== null) {
+                      <span class="badge-combo" aria-label="Ítem de combo">COMBO</span>
+                    }
+                  </td>
+                  <td class="col-num">{{ item.cantidad | number:'1.0-2' }}</td>
+                  <td class="col-num">{{ item.costoUnitario | number:'1.0-2' }}</td>
+                  <td class="col-num">{{ item.costoTotal | number:'1.0-2' }}</td>
+                  <td class="col-num">{{ item.referenciaId }}</td>
+                  <td class="col-fecha">{{ item.fechaCreacion | date:'dd/MM/yyyy HH:mm' }}</td>
+                  <td class="col-accion">
+                    @if (tabActual().puedeReversar) {
+                      <button
+                        class="btn-reverso"
+                        [disabled]="estadoActual().reversandoId === item.id"
+                        [attr.aria-disabled]="estadoActual().reversandoId === item.id"
+                        [attr.aria-label]="'Reversar movimiento ' + item.id"
+                        (click)="aplicarReverso(item)"
+                      >
+                        {{ estadoActual().reversandoId === item.id ? 'Reversando...' : 'Reversar' }}
+                      </button>
+                    }
+                  </td>
+                </tr>
+              } @empty {
+                <tr>
+                  <td colspan="7" class="state-cell">Sin movimientos para mostrar.</td>
+                </tr>
+              }
+            }
+          </tbody>
+        </table>
+      </div>
+
+      <app-pagination
+        [page]="estadoActual().page"
+        [size]="estadoActual().size"
+        [totalRows]="estadoActual().totalRows"
+        [totalPages]="estadoActual().totalPages"
+        (pageChange)="cambiarPagina($event)"
+        (sizeChange)="cambiarTamano($event)"
+      ></app-pagination>
+    </div>
+  </div>
+</div>

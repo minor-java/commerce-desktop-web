@@ -1,0 +1,51 @@
+<div class="backdrop" (click)="cerrar()">
+  <div
+    class="dialog dialog--narrow"
+    role="dialog"
+    aria-modal="true"
+    aria-labelledby="restablecer-titulo"
+    (click)="$event.stopPropagation()"
+  >
+    <div class="dialog-header">
+      <h2 id="restablecer-titulo" class="dialog-title">Restablecer contraseña</h2>
+      <button type="button" class="dialog-close" (click)="cerrar()" aria-label="Cerrar">✕</button>
+    </div>
+
+    <form (submit)="$event.preventDefault(); guardar()" novalidate>
+      <div class="dialog-body">
+        <p class="dialog-text">
+          Defina una contraseña temporal para <strong>{{ usuario().usuario }}</strong>.
+          Deberá cambiarla en su próximo ingreso. Si estaba bloqueado, también se desbloquea.
+        </p>
+
+        <div class="field">
+          <label for="r-contrasena">Contraseña temporal<span class="required" aria-hidden="true">*</span></label>
+          <input
+            id="r-contrasena"
+            type="password"
+            [formControl]="contrasena"
+            autocomplete="new-password"
+            aria-describedby="r-contrasena-ayuda"
+            [attr.aria-invalid]="contrasena.invalid && contrasena.touched ? 'true' : null"
+          />
+          <span
+            id="r-contrasena-ayuda"
+            class="hint-msg"
+            [class.error-msg]="contrasena.invalid && contrasena.touched"
+          >{{ ayudaContrasena }}</span>
+        </div>
+
+        @if (error()) {
+          <p class="error" role="alert">{{ error() }}</p>
+        }
+      </div>
+
+      <div class="dialog-footer">
+        <button type="button" class="btn-secondary" (click)="cerrar()" [disabled]="guardando()">Cancelar</button>
+        <button type="submit" class="btn-primary" [disabled]="guardando()">
+          {{ guardando() ? 'Guardando…' : 'Restablecer' }}
+        </button>
+      </div>
+    </form>
+  </div>
+</div>

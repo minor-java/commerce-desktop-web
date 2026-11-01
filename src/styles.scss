@@ -1,0 +1,91 @@
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+:root {
+  /* ══ Tema de color ═══════════════════════════════════════════════
+     Solo 5 colores base; todo lo demás se deriva de ellos. Los valores
+     de aquí son el tema neutral por defecto: Configuración > Estilos
+     los reemplaza en tiempo de ejecución (TemaService) sobre <html>.
+     Solo color: tamaños, espacios y bordes no dependen del tema. */
+  --tema-primario: #1f2937;   /* títulos, botón principal, menú activo   */
+  --tema-acento: #475569;     /* botones de acción, selección, foco      */
+  --tema-destacado: #94a3b8;  /* líneas decorativas, insignias, ranking  */
+  --tema-fondo: #f3f4f6;      /* fondo de la aplicación                  */
+  --tema-texto: #1f2937;      /* texto general                           */
+  /* Texto sobre cada color (lo recalcula TemaService según el contraste) */
+  --tema-sobre-primario: #ffffff;
+  --tema-sobre-acento: #ffffff;
+  --tema-sobre-destacado: #1f2937;
+
+  /* ── Tokens semánticos (derivados; los usan todos los componentes) ── */
+  --color-primary: var(--tema-primario);
+  --color-primary-light: color-mix(in srgb, var(--tema-primario) 82%, #ffffff);
+  --color-on-primary: var(--tema-sobre-primario);
+  --color-accent: var(--tema-acento);
+  --color-accent-hover: color-mix(in srgb, var(--tema-acento) 86%, #000000);
+  --color-on-accent: var(--tema-sobre-acento);
+  --color-surface: var(--tema-fondo);
+  --color-surface-alt: #ffffff;
+  --color-border: color-mix(in srgb, var(--tema-acento) 20%, #ffffff);
+  --color-text: var(--tema-texto);
+  --color-text-muted: color-mix(in srgb, var(--tema-texto) 68%, #ffffff);
+  --color-error: #c0394b;
+
+  --color-gold: var(--tema-destacado);
+  --color-gold-dark: color-mix(in srgb, var(--tema-destacado) 80%, #000000);
+  --color-gold-text: color-mix(in srgb, var(--tema-destacado) 55%, #000000);
+  --color-gold-soft: color-mix(in srgb, var(--tema-destacado) 65%, #a3a3a3);
+  --color-gold-softer: color-mix(in srgb, var(--tema-destacado) 50%, #8a8a8a);
+  --color-on-gold: var(--tema-sobre-destacado);
+
+  /* Alias heredados de la paleta anterior */
+  --color-white: #ffffff;
+  --color-pink-light: var(--color-surface);
+  --color-pink: var(--color-accent);
+
+  /* ── Menú lateral ───────────────────────────────── */
+  --color-nav-text: color-mix(in srgb, var(--tema-texto) 75%, #ffffff);
+  --color-nav-active: var(--color-primary);
+  --color-nav-muted: color-mix(in srgb, var(--tema-texto) 35%, #ffffff);
+  --color-nav-section: var(--color-text-muted);
+
+  --header-height: 64px;
+  --footer-height: 40px;
+  --sidebar-width: 220px;
+
+  /* ── Tipografia: fuentes del sistema, no requieren internet ── */
+  --font-sans: 'Segoe UI', system-ui, -apple-system, Roboto, sans-serif;
+  --font-display: 'Segoe UI', system-ui, -apple-system, Roboto, sans-serif;
+
+  font-family: var(--font-sans);
+  font-size: 16px;
+  line-height: 1.5;
+  color: var(--color-text);
+}
+
+body {
+  background: var(--color-surface);
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+button {
+  cursor: pointer;
+  font-family: inherit;
+  font-size: inherit;
+}
+
+ul, ol {
+  list-style: none;
+}
+
+h1, h2, h3, h4, h5, h6 {
+  font-weight: 600;
+  line-height: 1.25;
+}

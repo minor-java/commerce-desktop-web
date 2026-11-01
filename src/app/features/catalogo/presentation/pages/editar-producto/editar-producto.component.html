@@ -1,0 +1,157 @@
+<div class="page">
+  <h2>Editar producto</h2>
+
+  <form [formGroup]="form" novalidate>
+
+    <div class="field" [class.field--error]="form.controls.nombre.invalid && form.controls.nombre.touched">
+      <label for="nombre">Nombre <span class="required" aria-hidden="true">*</span></label>
+      <input
+        id="nombre"
+        type="text"
+        formControlName="nombre"
+        autocomplete="off"
+        aria-required="true"
+        [attr.aria-invalid]="form.controls.nombre.invalid && form.controls.nombre.touched"
+        aria-describedby="nombre-error"
+      />
+      @if (form.controls.nombre.invalid && form.controls.nombre.touched) {
+        <span id="nombre-error" class="error-msg" role="alert">El nombre es obligatorio</span>
+      }
+    </div>
+
+    <div class="field-row">
+      <div class="field">
+        <label for="presentacionValor">Contenido</label>
+        <input
+          id="presentacionValor"
+          type="text"
+          inputmode="decimal"
+          formControlName="presentacionValor"
+          (input)="actualizarPresentacionValor($event)"
+          placeholder="Ej. 20"
+          autocomplete="off"
+        />
+      </div>
+
+      <div class="field">
+        <label for="presentacionUnidad">Unidad</label>
+        <input
+          id="presentacionUnidad"
+          type="text"
+          formControlName="presentacionUnidad"
+          placeholder="Ej. g, L, ml"
+          autocomplete="off"
+        />
+      </div>
+    </div>
+
+    <div class="field">
+      <label for="precioVenta">Precio venta</label>
+      <input
+        id="precioVenta"
+        type="text"
+        inputmode="numeric"
+        [value]="precioDisplay()"
+        (input)="actualizarPrecio($event)"
+        [readOnly]="!puedeEditarPrecio()"
+        [attr.aria-describedby]="puedeEditarPrecio() ? null : 'precioVenta-ayuda'"
+        autocomplete="off"
+      />
+      @if (!puedeEditarPrecio()) {
+        <span id="precioVenta-ayuda" class="hint-msg">No tiene permiso para cambiar el precio de venta.</span>
+      }
+    </div>
+
+    <div class="field" [class.field--error]="form.controls.areaNegocioId.invalid && form.controls.areaNegocioId.touched">
+      <label for="areaNegocioId">Área de negocio <span class="required" aria-hidden="true">*</span></label>
+      <select
+        id="areaNegocioId"
+        formControlName="areaNegocioId"
+        aria-required="true"
+        [attr.aria-invalid]="form.controls.areaNegocioId.invalid && form.controls.areaNegocioId.touched"
+        aria-describedby="area-negocio-error"
+      >
+        <option [ngValue]="null" disabled>Seleccione un área</option>
+        @for (area of areasNegocio(); track area.id) {
+          <option [ngValue]="area.id">{{ area.nombre }}</option>
+        }
+      </select>
+      @if (form.controls.areaNegocioId.invalid && form.controls.areaNegocioId.touched) {
+        <span id="area-negocio-error" class="error-msg" role="alert">El área de negocio es obligatoria</span>
+      }
+    </div>
+
+    <app-selector-tarifa
+      [control]="form.controls.tarifaImpuestoId"
+      [impuestos]="impuestos()"
+      [tarifaHeredadaId]="tarifaDelArea()"
+      inputId="tarifaImpuestoId"
+    />
+
+    <div class="field field--checkbox">
+      <label class="checkbox-label">
+        <input type="checkbox" formControlName="activo" />
+        <span>Activo</span>
+      </label>
+    </div>
+
+    <div class="field" [class.field--error]="errorCodigo()">
+      <label for="codigoInput">Códigos de barras</label>
+      <div class="codigo-input-row">
+        <input
+          id="codigoInput"
+          type="text"
+          [value]="codigoInput()"
+          (input)="codigoInput.set($any($event.target).value); limpiarErrorCodigo()"
+          (keydown.enter)="$event.preventDefault(); agregarCodigo()"
+          placeholder="Ingrese un código y presione Enter o Agregar"
+          autocomplete="off"
+          [attr.aria-invalid]="!!errorCodigo()"
+          aria-describedby="codigo-error"
+          [disabled]="verificando()"
+        />
+        <button type="button" class="btn-primary" (click)="agregarCodigo()" [disabled]="verificando()">
+          @if (verificando()) { Verificando... } @else { Agregar }
+        </button>
+      </div>
+
+      <div class="codigo-input-row codigo-generar-row">
+        <button
+          type="button"
+          class="btn-secondary"
+          (click)="generarCodigoBarras()"
+          [disabled]="tieneCodigoAutogenerado() || generandoCodigo()"
+        >
+          @if (generandoCodigo()) { Generando... } @else { Generar código de barras }
+        </button>
+      </div>
+
+      @if (tieneCodigoAutogenerado()) {
+        <span class="hint-msg">Este producto ya tiene un código de barras generado automáticamente</span>
+      }
+
+      @if (errorCodigo()) {
+        <span id="codigo-error" class="error-msg" role="alert">{{ errorCodigo() }}</span>
+      }
+
+      @if (codigoItems().length > 0) {
+        <div class="codigos-print-wrapper">
+          <app-codigos-barras-print-list
+            [codigos]="codigosBarrasTexto()"
+            [nombre]="nombreEtiqueta()"
+            [eliminable]="true"
+            (eliminar)="eliminarCodigo($event)"
+          />
+        </div>
+      }
+    </div>
+
+    <div class="form-actions">
+      <button type="button" class="btn-secondary" (click)="cancelar()">Cancelar</button>
+      <button type="button" class="btn-primary" (click)="guardar()" [disabled]="guardando()">
+        @if (guardando()) { Guardando... } @else { Guardar cambios }
+      </button>
+    </div>
+
+  </form>
+</div>

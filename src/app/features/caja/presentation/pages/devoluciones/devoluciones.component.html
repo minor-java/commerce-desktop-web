@@ -1,0 +1,170 @@
+﻿<div class="page">
+
+  @if (verificandoCaja()) {
+    <div class="estado-caja" aria-live="polite">Verificando caja activa...</div>
+  } @else if (!caja()) {
+    <div class="sin-caja" role="alert">
+      <p class="sin-caja__titulo">No hay una caja activa</p>
+      <p class="sin-caja__desc">Para procesar devoluciones, debes abrir una caja primero.</p>
+      <a routerLink="/caja/caja" class="btn-ir-caja">Ir a Caja</a>
+    </div>
+  } @else {
+    <div class="toolbar">
+      <h2>Devoluciones</h2>
+    </div>
+
+    <div class="busqueda">
+      <label for="codigo-venta" class="busqueda__label">Código de venta</label>
+      <div class="busqueda__row">
+        <input
+          #codigoVentaInput
+          id="codigo-venta"
+          type="text"
+          inputmode="numeric"
+          class="busqueda__input"
+          placeholder="Escanea o ingresa el ID de venta..."
+          [value]="codigoVenta()"
+          (input)="actualizarCodigo($event)"
+          (keydown.enter)="buscarVenta()"
+          [disabled]="buscando()"
+          aria-label="ID de la venta a devolver"
+          autocomplete="off"
+        />
+        <button
+          type="button"
+          class="btn-buscar"
+          (click)="buscarVenta()"
+          [disabled]="buscando() || !codigoVenta()"
+        >
+          @if (buscando()) { Buscando... } @else { Buscar }
+        </button>
+        @if (venta()) {
+          <button type="button" class="btn-limpiar" (click)="limpiar()">Limpiar</button>
+        }
+      </div>
+
+      @if (error()) {
+        <div class="error" role="alert">{{ error() }}</div>
+      }
+    </div>
+
+    @if (venta(); as v) {
+      <div class="venta-info" aria-label="Información de la venta consultada">
+        <div class="venta-info__header">
+          <div class="venta-info__campo">
+            <span class="venta-info__etiqueta">ID Venta</span>
+            <span class="venta-info__valor">#{{ v.id }}</span>
+          </div>
+          <div class="venta-info__campo">
+            <span class="venta-info__etiqueta">Fecha venta</span>
+            <span class="venta-info__valor">{{ formatearFecha(v.fechaCreacion) }}</span>
+          </div>
+          @if (v.fechaAperturaCaja) {
+            <div class="venta-info__campo">
+              <span class="venta-info__etiqueta">Apertura caja</span>
+              <span class="venta-info__valor">{{ formatearFecha(v.fechaAperturaCaja) }}</span>
+            </div>
+          }
+          @if (v.fechaCierreCaja) {
+            <div class="venta-info__campo">
+              <span class="venta-info__etiqueta">Cierre caja</span>
+              <span class="venta-info__valor">{{ formatearFecha(v.fechaCierreCaja) }}</span>
+            </div>
+          }
+          <div class="venta-info__campo">
+            <span class="venta-info__etiqueta">Total</span>
+            <span class="venta-info__valor venta-info__valor--total">{{ v.total | number:'1.0-2' }}</span>
+          </div>
+          <div class="venta-info__campo">
+            <span class="venta-info__etiqueta">Caja origen</span>
+            <span class="venta-info__valor">#{{ v.cajaId }}</span>
+          </div>
+          @if (v.usuarioCajaOrigen) {
+            <div class="venta-info__campo">
+              <span class="venta-info__etiqueta">Usuario caja</span>
+              <span class="venta-info__valor">{{ v.usuarioCajaOrigen }}</span>
+            </div>
+          }
+        </div>
+      </div>
+
+      <div class="table-wrapper">
+        <table aria-label="Detalle de productos de la venta">
+          <thead>
+            <tr>
+              <th scope="col">Producto</th>
+              <th scope="col">Cantidad</th>
+              <th scope="col">Precio unit.</th>
+              <th scope="col">Subtotal</th>
+              <th scope="col">Acciones</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (item of v.detalles; track item.id) {
+              <tr>
+                <td>
+                  {{ item.nombreProducto }}
+                  @if (esCombo(item)) {
+                    <span class="badge-combo" aria-label="Producto de combo">COMBO</span>
+                  }
+                </td>
+                <td>{{ item.cantidad | number:'1.0-2' }}</td>
+                <td>{{ item.precioUnitario | number:'1.0-2' }}</td>
+                <td>{{ item.subtotal | number:'1.0-2' }}</td>
+                <td class="td-accion">
+                  @if (reversandoDetalleId() === item.id) {
+                    <div class="reverso-form">
+                      <label [for]="'cant-' + item.id" class="reverso-label">
+                        @if (esCombo(item)) {
+                          Combos a reversar (Máx. {{ item.cantidad | number:'1.0-0' }})
+                        } @else {
+                          Máx. {{ item.cantidad | number:'1.0-0' }}
+                        }
+                      </label>
+                      <input
+                        [id]="'cant-' + item.id"
+                        type="number"
+                        class="reverso-input"
+                        [value]="cantidadReverso()"
+                        (input)="actualizarCantidadReverso($event)"
+                        min="1"
+                        [max]="item.cantidad"
+                        step="1"
+                        [disabled]="enviandoReverso()"
+                        [attr.aria-label]="esCombo(item) ? 'Combos a reversar' : 'Cantidad a reversar'"
+                      />
+                      @if (esCombo(item)) {
+                        <p class="reverso-hint">Se reversarán todos los productos del combo por cada unidad ingresada.</p>
+                      }
+                      <button
+                        class="btn-confirmar"
+                        type="button"
+                        (click)="confirmarReverso(item)"
+                        [disabled]="enviandoReverso()"
+                      >{{ enviandoReverso() ? 'Procesando...' : 'Confirmar' }}</button>
+                      <button
+                        class="btn-cancelar"
+                        type="button"
+                        (click)="cancelarReverso()"
+                        [disabled]="enviandoReverso()"
+                      >Cancelar</button>
+                    </div>
+                  } @else {
+                    <button class="btn-reversar" type="button" (click)="iniciarReverso(item)">
+                      Reversar
+                    </button>
+                  }
+                </td>
+              </tr>
+            } @empty {
+              <tr>
+                <td colspan="5" class="state-cell">Sin detalles.</td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    }
+  }
+
+</div>

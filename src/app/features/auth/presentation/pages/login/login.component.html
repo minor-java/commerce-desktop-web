@@ -1,0 +1,151 @@
+<main class="login-page" role="main">
+
+  <!-- Panel de marca (oculto en móvil) -->
+  <aside class="login-brand" aria-hidden="true">
+    <div class="login-brand__deco login-brand__deco--tl"></div>
+    <div class="login-brand__deco login-brand__deco--br"></div>
+
+    <div class="login-brand__content">
+      <!-- Grupo: logo + nombre + divisor (todos de 200 px de ancho). Se configura en Configuración > Estilos -->
+      <div class="login-brand__group">
+        @if (tema.logoUrl(); as logo) {
+          <img [src]="logo" class="login-brand__logo" alt="" width="200" height="200" />
+        } @else {
+          <span class="login-brand__logo login-brand__logo--neutral">
+            <svg xmlns="http://www.w3.org/2000/svg" width="112" height="112" viewBox="0 0 24 24" fill="none"
+              stroke="currentColor" stroke-width="1.25" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M3 9.5 4.5 4h15L21 9.5"/>
+              <path d="M3 9.5a3 3 0 0 0 6 0 3 3 0 0 0 6 0 3 3 0 0 0 6 0"/>
+              <path d="M5 12.3V20h14v-7.7"/>
+              <path d="M10 20v-4.5h4V20"/>
+            </svg>
+          </span>
+        }
+
+        @if (letrasNombre(); as letras) {
+          <p class="login-brand__beauty" [style.font-family]="tema.textoNombre().familia" [style.font-size.rem]="tema.textoNombre().tamanoRem">
+            @for (letra of letras; track $index) {
+              <span>{{ letra }}</span>
+            }
+          </p>
+        } @else if (tema.nombreNegocio()) {
+          <p class="login-brand__beauty login-brand__beauty--texto" [style.font-family]="tema.textoNombre().familia" [style.font-size.rem]="tema.textoNombre().tamanoRem">{{ tema.nombreNegocio() }}</p>
+        }
+
+        <div class="login-brand__divider">
+          <span class="login-brand__line"></span>
+          @if (tema.imagenLoginUrl(); as imagen) {
+            <img [src]="imagen" class="login-brand__heart" width="16" height="16" alt="" />
+          } @else {
+            <span class="login-brand__rombo"></span>
+          }
+          <span class="login-brand__line"></span>
+        </div>
+      </div>
+
+      @if (tema.lema()) {
+        <p
+          class="login-brand__motto"
+          [class.login-brand__motto--recta]="tema.textoLema().manuscrita"
+          [style.font-family]="tema.textoLema().familia"
+          [style.font-size.rem]="tema.textoLema().tamanoRem"
+        >{{ tema.lema() }}</p>
+      }
+    </div>
+  </aside>
+
+  <!-- Área del formulario -->
+  <div class="login-form-area">
+
+    <div class="login-card">
+      <div class="login-card__gold-bar" aria-hidden="true"></div>
+
+      <div class="login-card__body">
+        <header class="login-card__header">
+          <h2
+            class="login-card__title"
+            [style.font-family]="tema.textoTitulo().familia"
+            [style.font-size.rem]="tema.textoTitulo().tamanoRem"
+          >{{ tema.tituloBienvenida() }}</h2>
+          <p class="login-card__sub">Ingresa tus credenciales para acceder al sistema</p>
+        </header>
+
+        <form
+          class="login-form"
+          [formGroup]="form"
+          (ngSubmit)="submit()"
+          novalidate
+          aria-label="Formulario de inicio de sesión"
+        >
+          <div class="field">
+            <label class="field__label" for="usuario">Usuario</label>
+            <input
+              id="usuario"
+              class="field__input"
+              type="text"
+              formControlName="usuario"
+              autocomplete="username"
+              placeholder="Ingrese su usuario"
+              [attr.aria-invalid]="error() ? 'true' : null"
+            />
+          </div>
+
+          <div class="field">
+            <label class="field__label" for="contrasena">Contraseña</label>
+            <div class="field__password-wrap">
+              <input
+                id="contrasena"
+                class="field__input"
+                [type]="showPassword() ? 'text' : 'password'"
+                formControlName="contrasena"
+                autocomplete="current-password"
+                placeholder="Ingrese su contraseña"
+                [attr.aria-invalid]="error() ? 'true' : null"
+              />
+              <button
+                type="button"
+                class="field__toggle-pass"
+                (click)="togglePassword()"
+                [attr.aria-label]="showPassword() ? 'Ocultar contraseña' : 'Mostrar contraseña'"
+              >
+                @if (showPassword()) {
+                  <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none"
+                    stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94"/>
+                    <path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19"/>
+                    <line x1="1" y1="1" x2="23" y2="23"/>
+                  </svg>
+                } @else {
+                  <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none"
+                    stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+                    <circle cx="12" cy="12" r="3"/>
+                  </svg>
+                }
+              </button>
+            </div>
+          </div>
+
+          @if (error()) {
+            <p class="login-error" role="alert" aria-live="polite">{{ error() }}</p>
+          }
+
+          <button
+            type="submit"
+            class="login-submit"
+            [disabled]="loading()"
+            [class.login-submit--loading]="loading()"
+          >
+            @if (loading()) {
+              <span class="spinner" aria-hidden="true"></span>
+              Iniciando sesión...
+            } @else {
+              Iniciar sesión
+            }
+          </button>
+        </form>
+      </div>
+    </div>
+
+  </div>
+</main>

@@ -1,0 +1,328 @@
+﻿<div class="page">
+
+  @if (verificandoCaja()) {
+    <div class="estado-caja" aria-live="polite">Verificando caja activa...</div>
+  } @else if (!cajaDisponible()) {
+    <div class="sin-caja" role="alert">
+      <p class="sin-caja__titulo">No hay una caja activa</p>
+      <p class="sin-caja__desc">Para registrar ventas, debes abrir una caja primero.</p>
+      <a routerLink="/caja/caja" class="btn-ir-caja">Ir a Caja</a>
+    </div>
+  } @else {
+
+  <!-- Scan section -->
+  <div class="scan-card">
+    <label for="codigo-input" class="scan-label">Código de barras</label>
+    <div class="scan-row">
+      <input
+        #codigoInput
+        id="codigo-input"
+        type="text"
+        class="scan-input"
+        (keydown)="onCodigoKeydown($event)"
+        placeholder="Escanee o ingrese código de barras y presione Enter"
+        autocomplete="off"
+        [disabled]="buscando() || verificandoCaja() || !cajaDisponible()"
+        aria-describedby="scan-hint"
+      />
+      <button
+        class="btn-primary scan-btn"
+        type="button"
+        (click)="abrirDialogBuscar()"
+        [disabled]="buscando() || verificandoCaja() || !cajaDisponible()"
+        aria-label="Buscar producto por nombre"
+      >
+        Buscar
+      </button>
+    </div>
+    <span id="scan-hint" class="scan-hint">Presione Enter o use la pistola lectora · Use "Buscar" para buscar por nombre</span>
+  </div>
+
+  <!-- Items list -->
+  @if (items().length > 0) {
+    <section class="items-section" aria-label="Lista de venta">
+      <div class="table-wrapper">
+        <table class="items-table">
+          <thead>
+            <tr>
+              <th scope="col">Nombre</th>
+              <th scope="col" class="col-num">Precio venta</th>
+              <th scope="col" class="col-num">Unidades</th>
+              <th scope="col" class="col-num">Subtotal</th>
+              <th scope="col" class="col-action"><span class="sr-only">Editar</span></th>
+              <th scope="col" class="col-action"><span class="sr-only">Eliminar</span></th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (item of items(); track item.productoId; let i = $index) {
+              <tr>
+                <td class="col-name">{{ item.nombreCompleto }}</td>
+                <td class="col-num">
+                  @if (item.precioPersonalizado !== undefined) {
+                    <span class="precio-original">$ {{ item.precioVenta | number:'1.0-0' }}</span>
+                    $ {{ item.precioPersonalizado | number:'1.0-2' }}
+                  } @else {
+                    $ {{ item.precioVenta | number:'1.0-2' }}
+                  }
+                </td>
+                <td class="col-num">{{ item.cantidad }}</td>
+                <td class="col-num">$ {{ (item.precioPersonalizado ?? item.precioVenta) * item.cantidad | number:'1.0-2' }}</td>
+                <td class="col-action">
+                  <button
+                    class="btn-icon btn-icon--edit"
+                    type="button"
+                    (click)="abrirModalEditar(i)"
+                    [attr.aria-label]="'Editar cantidad de ' + item.nombreCompleto"
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                      <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+                      <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+                    </svg>
+                  </button>
+                </td>
+                <td class="col-action">
+                  <button
+                    class="btn-icon btn-icon--delete"
+                    type="button"
+                    (click)="eliminarItem(i)"
+                    [attr.aria-label]="'Eliminar ' + item.nombreCompleto + ' de la lista'"
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                      <polyline points="3 6 5 6 21 6"/>
+                      <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/>
+                      <path d="M10 11v6M14 11v6"/>
+                      <path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/>
+                    </svg>
+                  </button>
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+
+      <div class="total-bar" aria-live="polite" aria-atomic="true">
+        @if (ajusteRedondeo() !== 0 && items().length > 0) {
+          <span class="total-detalle">
+            Suma $ {{ sumaLineas() | number:'1.0-2' }} · Redondeo {{ ajusteRedondeo() > 0 ? '+' : '−' }}$ {{ (ajusteRedondeo() < 0 ? -ajusteRedondeo() : ajusteRedondeo()) | number:'1.0-2' }}
+          </span>
+        }
+        @if (parametros().responsableIva) {
+          <span class="total-detalle">IVA incluido</span>
+        }
+        <span class="total-label">Total</span>
+        <span class="total-amount">$ {{ total() | number:'1.0-2' }}</span>
+      </div>
+    </section>
+
+    <!-- Payment section -->
+    <section class="payment-card" aria-labelledby="payment-heading">
+
+      <!-- Receptor field -->
+      <div class="field receptor-field">
+        <label for="receptor-input" class="receptor-label">
+          Dirigido a
+          @if (receptorObligatorio()) {
+            <span class="required" aria-hidden="true">*</span>
+          } @else {
+            <span class="receptor-opcional">(opcional)</span>
+          }
+        </label>
+        <input
+          id="receptor-input"
+          type="text"
+          class="receptor-input"
+          [value]="receptorNombre()"
+          (input)="onReceptorInput($event)"
+          placeholder="Empresa o persona que recibirá el recibo"
+          autocomplete="off"
+          maxlength="200"
+          [attr.aria-required]="receptorObligatorio() ? 'true' : null"
+          aria-describedby="receptor-hint"
+        />
+        <span id="receptor-hint" class="scan-hint">Aparecerá en el ticket impreso</span>
+      </div>
+
+      <h3 id="payment-heading" class="payment-heading">Método de pago</h3>
+
+      @if (metodosHabilitados().length > 0) {
+        <div class="payment-methods" role="radiogroup" aria-labelledby="payment-heading">
+          @for (m of metodosHabilitados(); track m.metodo) {
+            <label class="payment-option">
+              <input
+                type="radio"
+                name="metodoPago"
+                [checked]="metodoPago() === m.metodo"
+                (change)="onMetodoPagoChange(m.metodo)"
+              />
+              <span>{{ m.etiqueta }}</span>
+            </label>
+          }
+        </div>
+      } @else {
+        <p class="sin-metodos" role="alert">
+          Su usuario no tiene métodos de pago habilitados. Contacte al administrador.
+        </p>
+      }
+
+      @if (metodoPago() === 'EFECTIVO') {
+        <div class="efectivo-section">
+          <div class="field">
+            <label for="efectivo-input">Efectivo recibido</label>
+            <input
+              #efectivoInput
+              id="efectivo-input"
+              type="text"
+              inputmode="numeric"
+              (keydown)="onEfectivoKeydown($event)"
+              (paste)="$event.preventDefault()"
+              (input)="onEfectivoInput($event)"
+              placeholder="Ingrese el monto recibido"
+              autocomplete="off"
+            />
+          </div>
+
+          @if (cambio() !== null) {
+            <div
+              class="cambio-row"
+              [class.cambio-row--negativo]="cambio()! < 0"
+              aria-live="polite"
+              aria-atomic="true"
+            >
+              <span class="cambio-label">
+                @if (cambio()! >= 0) { Cambio } @else { Falta }
+              </span>
+              <span class="cambio-amount">
+                $ {{ (cambio()! < 0 ? -cambio()! : cambio()!) | number:'1.0-2' }}
+              </span>
+            </div>
+          }
+        </div>
+      }
+
+      <div class="register-action">
+        <button
+          class="btn-register"
+          type="button"
+          (click)="registrarVenta()"
+          [disabled]="registrando() || !metodoPago()"
+        >
+          @if (registrando()) {
+            <span class="btn-spinner" aria-hidden="true"></span>
+            Registrando...
+          } @else {
+            Registrar venta
+          }
+        </button>
+      </div>
+    </section>
+  }
+
+  }
+
+</div>
+
+<!-- Product search dialog -->
+@if (dialogBuscarAbierto()) {
+  <app-buscar-producto-dialog
+    [incluirCombos]="true"
+    (productoSeleccionado)="onProductoSeleccionadoDesdeDialog($event)"
+    (cerrado)="cerrarDialogBuscar()"
+  />
+}
+
+<!-- Quantity modal -->
+@if (modalAbierto()) {
+  <div
+    class="modal-backdrop"
+    role="presentation"
+    (click)="cerrarModal()"
+  >
+    <div
+      class="modal-card"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="modal-title"
+      (click)="$event.stopPropagation()"
+      (keydown.escape)="cerrarModal()"
+    >
+      <h3 id="modal-title" class="modal-title">
+        {{ modalModo() === 'agregar' ? 'Agregar producto' : 'Editar ítem' }}
+      </h3>
+      <p class="modal-product-name">{{ modalProducto()?.nombreCompleto }}</p>
+
+      <div class="modal-stock-info">
+        <span class="modal-stock-label">Stock disponible</span>
+        <span class="modal-stock-value">{{ modalProducto()?.stock }}</span>
+      </div>
+
+      <div class="field modal-field">
+        <label for="cantidad-modal-input">Cantidad</label>
+        <input
+          #cantidadInput
+          id="cantidad-modal-input"
+          type="number"
+          inputmode="numeric"
+          [value]="modalCantidad()"
+          (input)="onCantidadInput($event)"
+          (keydown)="onCantidadKeydown($event)"
+          min="1"
+          [attr.max]="maxCantidadModal()"
+          autocomplete="off"
+          aria-required="true"
+        />
+        @if (venderSinStock() && !modalProducto()?.comboId && modalCantidad() > (modalProducto()?.stock ?? 0)) {
+          <span class="scan-hint">Supera el stock: el inventario quedará en negativo.</span>
+        }
+      </div>
+
+      @if (modalModo() === 'editar' && puedeEditarPrecio()) {
+        <div class="field modal-field">
+          <label for="precio-modal-input">
+            Precio de venta
+            @if (modalPrecio() < (modalProducto()?.precioVenta ?? 0)) {
+              <span class="precio-descuento-label">· Base: $ {{ modalProducto()?.precioVenta | number:'1.0-0' }}</span>
+            }
+          </label>
+          <input
+            id="precio-modal-input"
+            type="number"
+            inputmode="numeric"
+            [value]="modalPrecio()"
+            (input)="onPrecioInput($event)"
+            [min]="precioMinimoModal()"
+            [max]="modalProducto()?.precioVenta"
+            autocomplete="off"
+            aria-describedby="precio-modal-hint"
+          />
+          <span id="precio-modal-hint" class="scan-hint">
+            @if (parametros().descuentoMaximo !== null) {
+              Mínimo: $ {{ precioMinimoModal() | number:'1.0-0' }} ·
+            }
+            Máximo: $ {{ modalProducto()?.precioVenta | number:'1.0-0' }}
+          </span>
+        </div>
+      }
+
+      <div class="modal-actions">
+        <button
+          #agregarBtn
+          class="btn-primary"
+          type="button"
+          (click)="confirmarModal()"
+          (keydown)="onAgregarKeydown($event)"
+        >
+          {{ modalModo() === 'agregar' ? 'Agregar' : 'Guardar' }}
+        </button>
+        <button
+          class="btn-cancel"
+          type="button"
+          tabindex="-1"
+          (click)="cerrarModal()"
+        >
+          Cancelar
+        </button>
+      </div>
+    </div>
+  </div>
+}

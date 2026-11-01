@@ -1,0 +1,97 @@
+<div class="backdrop" (click)="cerrar()">
+  <div
+    class="dialog"
+    role="dialog"
+    aria-modal="true"
+    aria-labelledby="usuario-dialog-titulo"
+    (click)="$event.stopPropagation()"
+  >
+    <div class="dialog-header">
+      <h2 id="usuario-dialog-titulo" class="dialog-title">
+        {{ esEdicion() ? 'Editar usuario' : 'Nuevo usuario' }}
+      </h2>
+      <button type="button" class="dialog-close" (click)="cerrar()" aria-label="Cerrar">✕</button>
+    </div>
+
+    <form [formGroup]="form" (ngSubmit)="guardar()" novalidate>
+      <div class="dialog-body">
+        <div class="form-row">
+          <div class="field">
+            <label for="u-usuario">Usuario<span class="required" aria-hidden="true">*</span></label>
+            <input
+              id="u-usuario"
+              type="text"
+              formControlName="usuario"
+              autocomplete="off"
+              [attr.aria-invalid]="mostrarError('usuario') ? 'true' : null"
+              aria-describedby="u-usuario-ayuda"
+            />
+            <span id="u-usuario-ayuda" class="hint-msg" [class.error-msg]="mostrarError('usuario')">
+              3 a 50 caracteres: letras, números, punto o guion.
+            </span>
+          </div>
+
+          <div class="field">
+            <label for="u-nombre">Nombre completo</label>
+            <input id="u-nombre" type="text" formControlName="nombre" autocomplete="off" />
+          </div>
+        </div>
+
+        <div class="field">
+          <label for="u-rol">Rol<span class="required" aria-hidden="true">*</span></label>
+          <select
+            id="u-rol"
+            formControlName="rolId"
+            [attr.aria-invalid]="mostrarError('rolId') ? 'true' : null"
+            [attr.aria-describedby]="esUsuarioActual() ? 'u-rol-ayuda' : mostrarError('rolId') ? 'u-rol-error' : null"
+          >
+            <option [ngValue]="null" disabled>Seleccione un rol</option>
+            @for (op of rolesOpciones(); track op.rol.id) {
+              <option [ngValue]="op.rol.id" [disabled]="!op.asignable">
+                {{ op.etiqueta }}
+              </option>
+            }
+          </select>
+          @if (esUsuarioActual()) {
+            <span id="u-rol-ayuda" class="hint-msg">No puede cambiar su propio rol ni desactivarse.</span>
+          } @else if (mostrarError('rolId')) {
+            <span id="u-rol-error" class="error-msg">Seleccione un rol</span>
+          }
+        </div>
+
+        @if (!esEdicion()) {
+          <div class="field">
+            <label for="u-contrasena">Contraseña temporal<span class="required" aria-hidden="true">*</span></label>
+            <input
+              id="u-contrasena"
+              type="password"
+              formControlName="contrasena"
+              autocomplete="new-password"
+              aria-describedby="u-contrasena-ayuda"
+              [attr.aria-invalid]="mostrarError('contrasena') ? 'true' : null"
+            />
+            <span id="u-contrasena-ayuda" class="hint-msg" [class.error-msg]="mostrarError('contrasena')">
+              {{ ayudaContrasena }} El usuario deberá cambiarla en su primer ingreso.
+            </span>
+          </div>
+        }
+
+        <label class="check">
+          <input type="checkbox" formControlName="activo" />
+          Usuario activo
+        </label>
+
+        @if (error()) {
+          <p class="error" role="alert">{{ error() }}</p>
+        }
+      </div>
+
+      <div class="dialog-footer">
+        <button type="button" class="btn-secondary" (click)="cerrar()" [disabled]="guardando()">Cancelar</button>
+        <button type="submit" class="btn-primary" [disabled]="guardando()">
+          {{ guardando() ? 'Guardando…' : 'Guardar' }}
+        </button>
+      </div>
+    </form>
+  </div>
+</div>

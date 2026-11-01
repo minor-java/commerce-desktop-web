@@ -1,0 +1,57 @@
+@use '../../styles/configuracion';
+@use '../../styles/formulario-config';
+
+.filtros { gap: 0.75rem; }
+
+.periodos {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.375rem;
+}
+
+.rango {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 0.75rem 1rem;
+}
+
+.resumen {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 1rem;
+}
+
+.kpi {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  padding: 1rem 1.25rem;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: 10px;
+}
+
+.kpi-etiqueta {
+  font-size: 0.8125rem;
+  color: var(--color-nav-text);
+}
+
+.kpi-valor {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--color-text);
+}
+
+.kpi-detalle {
+  font-size: 0.8125rem;
+  color: var(--color-nav-text);
+}
+
+.col-total { font-weight: 600; }
+
+.notas {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}

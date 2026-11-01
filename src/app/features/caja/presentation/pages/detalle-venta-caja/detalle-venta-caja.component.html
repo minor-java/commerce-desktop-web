@@ -1,0 +1,109 @@
+﻿<div class="page">
+
+  <div class="page-header">
+    <a routerLink="/caja/historial-ventas" class="btn-volver">← Volver</a>
+    @if (venta()) {
+      <h2 class="page-titulo">Venta #{{ venta()!.id }}</h2>
+    } @else {
+      <h2 class="page-titulo">Detalle de venta</h2>
+    }
+  </div>
+
+  @if (cargando()) {
+    <div class="estado" aria-live="polite">Cargando...</div>
+  } @else if (error()) {
+    <div class="error-msg" role="alert">{{ error() }}</div>
+  } @else if (venta()) {
+    <div class="venta-meta">
+      <span class="meta-item">
+        <span class="meta-label">Fecha venta</span>
+        <span class="meta-value">{{ formatearFecha(venta()!.fechaCreacion) }}</span>
+      </span>
+      <span class="meta-sep"></span>
+      <span class="meta-item">
+        <span class="meta-label">Total</span>
+        <span class="meta-value meta-value--total">{{ venta()!.total | number:'1.0-2' }}</span>
+      </span>
+    </div>
+
+    <div class="table-wrapper">
+      <table aria-label="Ítems de la venta">
+        <thead>
+          <tr>
+            <th scope="col">Producto</th>
+            <th scope="col">Cantidad</th>
+            <th scope="col">Precio unit.</th>
+            <th scope="col">Subtotal</th>
+            <th scope="col">Acciones</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (d of venta()!.detalles; track d.id) {
+            <tr>
+              <td>
+                {{ d.nombreProducto }}
+                @if (esCombo(d)) {
+                  <span class="badge-combo" aria-label="Producto de combo">COMBO</span>
+                }
+              </td>
+              <td>{{ d.cantidad | number:'1.0-0' }}</td>
+              <td>{{ d.precioUnitario | number:'1.0-2' }}</td>
+              <td>{{ d.subtotal | number:'1.0-2' }}</td>
+              <td class="td-accion">
+                @if (reversandoDetalleId() === d.id) {
+                  <div class="reverso-form">
+                    <label [for]="'cant-' + d.id" class="reverso-label">
+                      @if (esCombo(d)) {
+                        Combos a reversar (Máx. {{ d.cantidad | number:'1.0-0' }})
+                      } @else {
+                        Máx. {{ d.cantidad | number:'1.0-0' }}
+                      }
+                    </label>
+                    <input
+                      [id]="'cant-' + d.id"
+                      type="number"
+                      class="reverso-input"
+                      [value]="cantidadReverso()"
+                      (input)="actualizarCantidadReverso($event)"
+                      (keydown)="soloNumeros($event)"
+                      (paste)="$event.preventDefault()"
+                      min="1"
+                      [max]="d.cantidad"
+                      step="1"
+                      [disabled]="enviandoReverso()"
+                      [attr.aria-label]="esCombo(d) ? 'Combos a reversar' : 'Cantidad a reversar'"
+                    />
+                    @if (esCombo(d)) {
+                      <p class="reverso-hint">Se reversarán todos los productos del combo por cada unidad ingresada.</p>
+                    }
+                    <button
+                      class="btn-confirmar"
+                      type="button"
+                      (click)="confirmarReverso(d)"
+                      [disabled]="enviandoReverso()"
+                    >{{ enviandoReverso() ? 'Procesando...' : 'Confirmar' }}</button>
+                    <button
+                      class="btn-cancelar"
+                      type="button"
+                      (click)="cancelarReverso()"
+                      [disabled]="enviandoReverso()"
+                    >Cancelar</button>
+                  </div>
+                } @else {
+                  <button class="btn-reversar" type="button" (click)="iniciarReverso(d)">
+                    Reversar
+                  </button>
+                }
+              </td>
+            </tr>
+          } @empty {
+            <tr>
+              <td colspan="5" class="state-cell">Sin detalles.</td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  }
+
+</div>

@@ -1,0 +1,37 @@
+:host { display: block; flex-shrink: 0; }
+
+footer {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: var(--footer-height);
+  background: var(--color-surface-alt);
+  border-top: 1px solid var(--color-border);
+  overflow: hidden;
+
+  &::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 15%;
+    right: 15%;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, var(--color-gold), transparent);
+    opacity: 0.45;
+  }
+}
+
+.footer-inner {
+  display: flex;
+  align-items: center;
+  gap: 0.625rem;
+  font-size: 0.75rem;
+  color: var(--color-text-muted);
+}
+
+.footer-ornament {
+  color: var(--color-gold);
+  font-size: 0.5rem;
+  opacity: 0.7;
+}

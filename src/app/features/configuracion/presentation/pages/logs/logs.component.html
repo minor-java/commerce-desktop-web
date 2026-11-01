@@ -1,0 +1,71 @@
+<div class="page">
+  <div class="toolbar">
+    <div>
+      <h1>Logs</h1>
+      <p class="toolbar-hint">
+        Registro técnico de lo que hace la aplicación. Si soporte se los pide, descárguelos y envíelos.
+      </p>
+    </div>
+    <button
+      type="button"
+      class="btn-primary"
+      (click)="descargarTodos()"
+      [disabled]="cargando() || !!descargando() || dias().length === 0"
+    >
+      {{ descargando() === 'todos' ? 'Preparando…' : 'Descargar todo (.zip)' }}
+    </button>
+  </div>
+
+  @if (error()) {
+    <div class="error" role="alert">{{ error() }}</div>
+  }
+
+  <section aria-labelledby="dias-titulo">
+    <h2 id="dias-titulo" class="seccion-titulo">Días guardados en este equipo</h2>
+    <div class="table-wrapper">
+      <table aria-labelledby="dias-titulo">
+        <thead>
+          <tr>
+            <th scope="col">Fecha</th>
+            <th scope="col">Contenido</th>
+            <th scope="col" class="col-num">Tamaño</th>
+            <th scope="col" class="col-actions">Acciones</th>
+          </tr>
+        </thead>
+        <tbody>
+          @if (cargando()) {
+            <tr><td colspan="4" class="state-cell" aria-live="polite">Cargando…</td></tr>
+          } @else {
+            @for (f of filas(); track f.dia.fecha) {
+              <tr>
+                <td class="col-name">
+                  {{ f.fecha | date: 'dd/MM/yyyy' }}
+                  @if (f.etiqueta) {
+                    <span class="etiqueta-dia">{{ f.etiqueta }}</span>
+                  }
+                </td>
+                <td class="col-muted">{{ origen(f.dia) }}</td>
+                <td class="col-num">{{ tamano(f.dia) }}</td>
+                <td class="col-actions">
+                  <button
+                    type="button"
+                    class="btn-icon"
+                    [disabled]="!!descargando()"
+                    (click)="descargarDia(f.dia)"
+                    [attr.aria-label]="'Descargar log del ' + (f.fecha | date: 'dd/MM/yyyy')"
+                  >{{ descargando() === f.dia.fecha ? 'Descargando…' : 'Descargar' }}</button>
+                </td>
+              </tr>
+            } @empty {
+              <tr><td colspan="4" class="state-cell">No hay logs guardados en este equipo.</td></tr>
+            }
+          }
+        </tbody>
+      </table>
+    </div>
+    <p class="hint-msg nota">
+      Se conservan los últimos {{ diasRetencion }} días ({{ tamanoTotal() }} en disco); los más antiguos se eliminan
+      automáticamente. Cada día se descarga como texto (.log); "Descargar todo" incluye además los datos del equipo.
+    </p>
+  </section>
+</div>

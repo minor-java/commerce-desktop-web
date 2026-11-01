@@ -1,0 +1,123 @@
+<div class="page">
+  <div class="toolbar">
+    <h2>Pérdidas de inventario</h2>
+  </div>
+
+  <!-- Formulario de registro -->
+  <section class="form-card" aria-label="Registrar pérdida">
+    <h3 class="form-card__title">Registrar pérdida</h3>
+
+    <div class="form-body">
+      <!-- Selección de producto -->
+      <div class="field">
+        <span class="field__label">Producto</span>
+        @if (productoSeleccionado(); as p) {
+          <div class="producto-seleccionado">
+            <span class="producto-seleccionado__nombre">{{ p.nombreCompleto }}</span>
+            <button
+              type="button"
+              class="btn-quitar"
+              (click)="limpiarProducto()"
+              aria-label="Quitar producto seleccionado"
+            >
+              Quitar
+            </button>
+          </div>
+        } @else {
+          <button type="button" class="btn-buscar" (click)="abrirDialog()">
+            Buscar producto
+          </button>
+        }
+      </div>
+
+      <!-- Cantidad -->
+      <div class="field">
+        <label class="field__label" for="cantidad">Cantidad a dar de baja</label>
+        <input
+          id="cantidad"
+          type="number"
+          inputmode="decimal"
+          min="0.001"
+          step="1"
+          placeholder="0"
+          [formControl]="form.controls.cantidad"
+          [class.input--error]="form.controls.cantidad.invalid && form.controls.cantidad.touched"
+          aria-describedby="cantidad-error"
+        />
+        @if (form.controls.cantidad.invalid && form.controls.cantidad.touched) {
+          <span id="cantidad-error" class="field__error" role="alert">
+            Ingrese una cantidad mayor a cero
+          </span>
+        }
+      </div>
+
+      <!-- Acción -->
+      <button
+        type="button"
+        class="btn-registrar"
+        [disabled]="guardando() || !productoSeleccionado()"
+        (click)="registrar()"
+        aria-busy="guardando()"
+      >
+        {{ guardando() ? 'Registrando…' : 'Registrar pérdida' }}
+      </button>
+    </div>
+  </section>
+
+  <!-- Dialog de búsqueda -->
+  @if (dialogAbierto()) {
+    <app-buscar-producto-dialog
+      (productoSeleccionado)="onProductoSeleccionado($event)"
+      (cerrado)="onDialogCerrado()"
+    />
+  }
+
+  <!-- Historial -->
+  <section aria-label="Historial de pérdidas">
+    <div class="table-wrapper">
+      <table aria-label="Historial de pérdidas de inventario">
+        <thead>
+          <tr>
+            <th scope="col">#</th>
+            <th scope="col">Fecha</th>
+            <th scope="col">Producto</th>
+            <th scope="col">Cantidad</th>
+            <th scope="col">Costo unitario</th>
+            <th scope="col">Costo total</th>
+          </tr>
+        </thead>
+        <tbody>
+          @if (cargando()) {
+            <tr>
+              <td colspan="6" class="state-cell" aria-live="polite">Cargando…</td>
+            </tr>
+          } @else {
+            @for (item of items(); track item.id) {
+              <tr>
+                <td>{{ item.id }}</td>
+                <td>{{ item.fechaCreacion | date:'dd/MM/yyyy HH:mm' }}</td>
+                <td>{{ item.nombreProducto ?? '—' }}</td>
+                <td>{{ item.cantidad | number:'1.0-3' }}</td>
+                <td>{{ item.costoUnitario | number:'1.0-2' }}</td>
+                <td>{{ item.costoTotal | number:'1.0-2' }}</td>
+              </tr>
+            } @empty {
+              <tr>
+                <td colspan="6" class="state-cell">Sin pérdidas registradas.</td>
+              </tr>
+            }
+          }
+        </tbody>
+      </table>
+    </div>
+
+    <app-pagination
+      [page]="page()"
+      [size]="size()"
+      [totalRows]="totalRows()"
+      [totalPages]="totalPages()"
+      (pageChange)="cambiarPagina($event)"
+      (sizeChange)="cambiarTamano($event)"
+    />
+  </section>
+</div>

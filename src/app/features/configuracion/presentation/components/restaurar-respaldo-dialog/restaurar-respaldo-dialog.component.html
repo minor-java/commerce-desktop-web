@@ -1,0 +1,96 @@
+<div class="backdrop" (click)="cerrar()">
+  <div
+    class="dialog"
+    role="dialog"
+    aria-modal="true"
+    aria-labelledby="restaurar-titulo"
+    [attr.aria-describedby]="vista().bloqueos.length > 0 ? null : 'restaurar-advertencia'"
+    (click)="$event.stopPropagation()"
+  >
+    <div class="dialog-header">
+      <h2 id="restaurar-titulo" class="dialog-title">Restaurar respaldo</h2>
+      <button type="button" class="dialog-close" (click)="cerrar()" aria-label="Cerrar" [disabled]="restaurando()">✕</button>
+    </div>
+
+    <form (submit)="$event.preventDefault(); restaurar()" novalidate class="dialog-form">
+      <div class="dialog-body">
+        <dl class="resumen">
+          <dt>Archivo</dt>
+          <dd>{{ nombreOriginal() ?? vista().respaldo.archivo }} <span class="col-muted">({{ tamano() }})</span></dd>
+          <dt>Fecha del respaldo</dt>
+          <dd>{{ vista().respaldo.fechaCreacion | date: 'dd/MM/yyyy HH:mm' }}</dd>
+          <dt>Generado por</dt>
+          <dd>{{ vista().respaldo.usuario }}</dd>
+          <dt>Versión de datos</dt>
+          <dd>
+            {{ vista().respaldo.versionEsquema }}
+            <span class="col-muted">(instalada: {{ vista().versionEsquemaActual }})</span>
+          </dd>
+        </dl>
+
+        @if ((vista().respaldo.conteos | keyvalue: sinOrdenConteos).length > 0) {
+          <ul class="conteos" role="list" aria-label="Contenido del respaldo">
+            @for (c of vista().respaldo.conteos | keyvalue: sinOrdenConteos; track c.key) {
+              <li><span class="conteo-valor">{{ c.value | number }}</span> {{ c.key }}</li>
+            }
+          </ul>
+        }
+
+        @if (vista().bloqueos.length > 0) {
+          <div class="error" role="alert">
+            <p class="bloqueo-titulo">No se puede restaurar todavía:</p>
+            <ul>
+              @for (b of vista().bloqueos; track b) {
+                <li>{{ b }}</li>
+              }
+            </ul>
+          </div>
+        } @else {
+          <div id="restaurar-advertencia" class="advertencia" role="note">
+            <strong>Esta acción reemplaza todos los datos actuales</strong> (ventas, productos, cajas, usuarios y roles)
+            por los del respaldo, y no se puede deshacer. El super usuario se conserva.
+            Al terminar se cerrarán todas las sesiones.
+          </div>
+
+          <div class="field">
+            <label for="rr-contrasena">Su contraseña<span class="required" aria-hidden="true">*</span></label>
+            <input
+              id="rr-contrasena"
+              type="password"
+              [formControl]="contrasena"
+              autocomplete="current-password"
+              [attr.aria-invalid]="contrasena.invalid && contrasena.touched ? 'true' : null"
+              [attr.aria-describedby]="contrasena.invalid && contrasena.touched ? 'rr-contrasena-error' : null"
+            />
+            @if (contrasena.invalid && contrasena.touched) {
+              <span id="rr-contrasena-error" class="error-msg">Ingrese su contraseña para confirmar</span>
+            }
+          </div>
+
+          <div class="field">
+            <label for="rr-confirmacion">
+              Escriba <strong>{{ palabraConfirmacion }}</strong> para confirmar
+            </label>
+            <input id="rr-confirmacion" type="text" [formControl]="confirmacion" autocomplete="off" spellcheck="false" />
+          </div>
+        }
+
+        @if (error()) {
+          <p class="error" role="alert">{{ error() }}</p>
+        }
+        @if (restaurando()) {
+          <p class="hint-msg" aria-live="polite">Restaurando… no cierre la aplicación.</p>
+        }
+      </div>
+
+      <div class="dialog-footer">
+        <button type="button" class="btn-secondary" (click)="cerrar()" [disabled]="restaurando()">Cancelar</button>
+        @if (vista().puedeRestaurar) {
+          <button type="submit" class="btn-danger" [disabled]="!confirmado() || restaurando()">
+            {{ restaurando() ? 'Restaurando…' : 'Restaurar' }}
+          </button>
+        }
+      </div>
+    </form>
+  </div>
+</div>

@@ -1,0 +1,30 @@
+<div class="backdrop" (keydown.escape)="$event.preventDefault(); $event.stopPropagation()">
+  <div
+    class="dialog"
+    role="dialog"
+    aria-modal="true"
+    [attr.aria-labelledby]="'modal-title'"
+  >
+    <h2 id="modal-title" class="titulo">{{ config().titulo }}</h2>
+
+    <dl class="filas" [attr.aria-label]="config().titulo">
+      @for (fila of config().filas; track fila.etiqueta) {
+        <div class="fila">
+          <dt>{{ fila.etiqueta }}</dt>
+          <dd>{{ fila.valor }}</dd>
+        </div>
+      }
+    </dl>
+
+    <div class="acciones">
+      <button
+        #btnAceptar
+        type="button"
+        class="btn-primary"
+        (click)="aceptar()"
+      >
+        Aceptar
+      </button>
+    </div>
+  </div>
+</div>

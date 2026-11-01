@@ -1,0 +1,742 @@
+﻿<div class="page">
+
+  <!-- ═══════════════════════════════════════════ TABLA ═══════════════════════════════════════════ -->
+  @if (vista() === 'tabla') {
+
+    <div class="toolbar">
+      <h2>Gestión de Combos</h2>
+      <div class="toolbar-actions">
+        <button class="btn-secondary" type="button" (click)="limpiarFiltros()">Limpiar filtros</button>
+        <button
+          class="btn-secondary"
+          type="button"
+          [disabled]="!comboSeleccionado()"
+          (click)="abrirEditar()"
+        >Editar</button>
+        <button class="btn-primary" type="button" (click)="iniciarCrear()">Crear combo</button>
+      </div>
+    </div>
+
+    @if (error()) {
+      <div class="error" role="alert">{{ error() }}</div>
+    }
+
+    <div class="table-wrapper">
+      <table aria-label="Listado de combos">
+        <thead>
+          <tr>
+            <th scope="col">ID</th>
+            <th scope="col">Nombre</th>
+            <th scope="col">Precio base</th>
+            <th scope="col">Disponible</th>
+            <th scope="col">Estado</th>
+            <th scope="col">Código de barras</th>
+            <th scope="col">Fecha creación</th>
+            <th scope="col" class="col-actions">Acciones</th>
+          </tr>
+          <tr class="filter-row">
+            <th></th>
+            <th>
+              <input
+                type="text"
+                [value]="filtroNombre()"
+                (input)="filtroNombre.set($any($event.target).value)"
+                (keydown.enter)="aplicarFiltros()"
+                placeholder="Filtrar..."
+                aria-label="Filtrar por nombre"
+              />
+            </th>
+            <th></th>
+            <th></th>
+            <th>
+              <select [value]="filtroActivo()" (change)="actualizarFiltroActivo($event)" aria-label="Filtrar por estado">
+                <option value="">Todos</option>
+                <option value="true">Activo</option>
+                <option value="false">Inactivo</option>
+              </select>
+            </th>
+            <th>
+              <input
+                type="text"
+                [value]="filtroCodigoBarra()"
+                (input)="filtroCodigoBarra.set($any($event.target).value)"
+                (keydown.enter)="aplicarFiltros()"
+                placeholder="Código exacto + Enter"
+                aria-label="Filtrar por código de barras"
+              />
+            </th>
+            <th>
+              <div class="date-range">
+                <label for="combo-desde" class="sr-only">Desde</label>
+                <input id="combo-desde" type="date" [value]="filtroFechaDesde()" [attr.max]="filtroFechaHasta() || null" (change)="actualizarFechaDesde($event)" aria-label="Fecha desde" />
+                <span class="date-sep">–</span>
+                <label for="combo-hasta" class="sr-only">Hasta</label>
+                <input id="combo-hasta" type="date" [value]="filtroFechaHasta()" [attr.min]="filtroFechaDesde() || null" (change)="actualizarFechaHasta($event)" aria-label="Fecha hasta" />
+                @if (errorFecha()) {
+                  <span class="filter-error" role="alert">{{ errorFecha() }}</span>
+                }
+              </div>
+            </th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          @if (cargando()) {
+            <tr><td colspan="8" class="state-cell" aria-live="polite">Cargando...</td></tr>
+          } @else {
+            @for (combo of combos(); track combo.id) {
+              <tr
+                [class.row--selected]="comboSeleccionado()?.id === combo.id"
+                (click)="seleccionarCombo(combo)"
+                style="cursor:pointer"
+              >
+                <td>{{ combo.id }}</td>
+                <td class="col-name">{{ combo.nombre }}</td>
+                <td>{{ combo.precioBase | number:'1.0-2' }}</td>
+                <td class="col-num">{{ combo.cantidadDisponible }}</td>
+                <td>
+                  <span class="badge" [class.badge--activo]="combo.activo" [class.badge--inactivo]="!combo.activo">
+                    {{ combo.activo ? 'Activo' : 'Inactivo' }}
+                  </span>
+                </td>
+                <td class="col-codigo">
+                  @if (combo.codigosBarras && combo.codigosBarras.length > 0) {
+                    <span class="codigo-badge">{{ combo.codigosBarras[0] }}</span>
+                    @if (combo.codigosBarras.length > 1) {
+                      <span class="codigo-extra">+{{ combo.codigosBarras.length - 1 }}</span>
+                    }
+                    <button
+                      type="button"
+                      class="btn-icon btn-icon--detail"
+                      (click)="$event.stopPropagation(); abrirCodigosBarras(combo)"
+                      [attr.aria-label]="'Ver códigos de barras de ' + combo.nombre"
+                    >
+                      Ver
+                    </button>
+                  } @else {
+                    <span class="col-empty">—</span>
+                  }
+                </td>
+                <td>{{ formatearFecha(combo.fechaCreacion) }}</td>
+                <td class="col-actions">
+                  <button
+                    type="button"
+                    class="btn-icon btn-icon--detail"
+                    (click)="$event.stopPropagation(); abrirDetalle(combo)"
+                    [attr.aria-label]="'Ver detalle del combo ' + combo.nombre"
+                  >
+                    Detalle
+                  </button>
+                </td>
+              </tr>
+            } @empty {
+              <tr><td colspan="8" class="state-cell">Sin combos para mostrar.</td></tr>
+            }
+          }
+        </tbody>
+      </table>
+    </div>
+
+    <app-pagination
+      [page]="page()"
+      [size]="size()"
+      [totalRows]="totalRows()"
+      [totalPages]="totalPages()"
+      (pageChange)="cambiarPagina($event)"
+      (sizeChange)="cambiarTamano($event)"
+    ></app-pagination>
+  }
+
+  <!-- ═══════════════════════════════════════════ PASO 1 ═══════════════════════════════════════════ -->
+  @if (vista() === 'paso1') {
+
+    <div class="toolbar">
+      <h2>Nuevo combo<span class="step-badge">Paso 1 — Productos</span></h2>
+    </div>
+
+    <div class="scan-card">
+      <span class="scan-label">Escanear código de barras</span>
+      <div class="scan-row">
+        <input
+          #scanInput
+          type="text"
+          class="scan-input"
+          placeholder="Código de barras..."
+          [disabled]="buscandoScan() || modalAbierto() || dialogBuscarAbierto()"
+          (keydown)="onScanKeydown($event)"
+          aria-label="Código de barras del producto"
+        />
+        <button type="button" class="btn-primary" (click)="abrirDialogBuscar()" (keydown.enter)="$event.preventDefault()" [disabled]="buscandoScan()">
+          Buscar producto
+        </button>
+      </div>
+      <span class="scan-hint">Escanea o busca productos para agregar al combo.</span>
+    </div>
+
+    @if (itemsCombo().length > 0) {
+      <div class="table-wrapper">
+        <table aria-label="Productos del combo">
+          <thead>
+            <tr>
+              <th scope="col">Producto</th>
+              <th scope="col" class="col-num">Cantidad</th>
+              <th scope="col" class="col-num">Costo unitario</th>
+              <th scope="col" class="col-num">Subtotal costo</th>
+              <th scope="col" class="col-actions">Acciones</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (item of itemsCombo(); track item.productoId; let i = $index) {
+              <tr>
+                <td class="col-name">{{ item.nombreCompleto }}</td>
+                <td class="col-num">{{ item.cantidad | number:'1.0-2' }}</td>
+                <td class="col-num">
+                  @if (costoByProductoId().get(item.productoId); as c) {
+                    {{ c.unitario | number:'1.0-2' }}
+                  } @else { — }
+                </td>
+                <td class="col-num">
+                  @if (costoByProductoId().get(item.productoId); as c) {
+                    {{ c.total | number:'1.0-2' }}
+                  } @else { — }
+                </td>
+                <td class="col-actions">
+                  <button type="button" class="btn-icon btn-icon--detail" (click)="abrirModalEditar(i)" [attr.aria-label]="'Editar cantidad de ' + item.nombreCompleto">Editar</button>
+                  <button type="button" class="btn-icon btn-icon--delete" (click)="eliminarItemCombo(i)" [attr.aria-label]="'Quitar ' + item.nombreCompleto + ' del combo'">Quitar</button>
+                </td>
+              </tr>
+            }
+          </tbody>
+          @if (costoResult()) {
+            <tfoot>
+              <tr>
+                <td colspan="3" class="total-label">Costo total estimado</td>
+                <td class="col-num total-value">{{ costoResult()!.costoTotal | number:'1.0-2' }}</td>
+                <td></td>
+              </tr>
+            </tfoot>
+          }
+        </table>
+      </div>
+    } @else {
+      <div class="empty-state">
+        <p>Aún no hay productos en el combo.</p>
+        <p>Escanea un código de barras o usa el buscador para agregar.</p>
+      </div>
+    }
+
+    <div class="form-actions">
+      <button type="button" class="btn-cancel" (click)="cancelarCrear()">Cancelar</button>
+      <button type="button" class="btn-primary" (click)="irAPaso2()" [disabled]="cargandoCosto() || itemsCombo().length === 0">
+        @if (cargandoCosto()) { Calculando... } @else { Siguiente }
+      </button>
+    </div>
+  }
+
+  <!-- ═══════════════════════════════════════════ DIALOGS ═══════════════════════════════════════════ -->
+
+  <!-- Dialog paso 2 — detalles del combo -->
+  @if (paso2Abierto()) {
+    <div class="modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="paso2-title">
+      <div class="modal-card modal-card--paso2" (click)="$event.stopPropagation()">
+
+        <div class="modal-paso2-header">
+          <h3 id="paso2-title" class="modal-title">Detalles del combo</h3>
+        </div>
+
+        @if (costoResult()) {
+          <div class="modal-costo-section">
+            <p class="modal-section-label">Costo estimado</p>
+            <table class="modal-costo-table" aria-label="Costo por producto">
+              <thead>
+                <tr>
+                  <th scope="col">Producto</th>
+                  <th scope="col" class="col-num">Cant.</th>
+                  <th scope="col" class="col-num">Costo unit.</th>
+                  <th scope="col" class="col-num">Subtotal</th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (item of costoResult()!.items; track item.productoId) {
+                  <tr>
+                    <td>{{ item.nombreProducto }}</td>
+                    <td class="col-num">{{ item.cantidad | number:'1.0-2' }}</td>
+                    <td class="col-num">{{ item.costoUnitario | number:'1.0-2' }}</td>
+                    <td class="col-num">{{ item.costoItem | number:'1.0-2' }}</td>
+                  </tr>
+                }
+              </tbody>
+              <tfoot>
+                <tr>
+                  <td colspan="3" class="total-label">Costo total</td>
+                  <td class="col-num total-value">{{ costoResult()!.costoTotal | number:'1.0-2' }}</td>
+                </tr>
+              </tfoot>
+            </table>
+          </div>
+        }
+
+        <div class="modal-form-section">
+          <p class="modal-section-label">Datos del combo</p>
+          <div class="modal-form-fields">
+
+            <div class="field">
+              <label for="nombreCombo">Nombre <span class="required">*</span></label>
+              <input
+                id="nombreCombo"
+                type="text"
+                [value]="nombreCombo()"
+                (input)="nombreCombo.set($any($event.target).value)"
+                placeholder="Nombre del combo"
+                [class.field--error]="errorNombre()"
+                aria-required="true"
+              />
+              @if (errorNombre()) {
+                <span class="error-msg" role="alert">{{ errorNombre() }}</span>
+              }
+            </div>
+
+            <div class="field">
+              <label for="precioBase">Precio de venta <span class="required">*</span></label>
+              <input
+                id="precioBase"
+                type="text"
+                inputmode="numeric"
+                [value]="precioBaseDisplay()"
+                (input)="onPrecioInput($event)"
+                placeholder="Ej. 5.000"
+                [class.field--error]="errorPrecio()"
+                aria-required="true"
+              />
+              @if (errorPrecio()) {
+                <span class="error-msg" role="alert">{{ errorPrecio() }}</span>
+              }
+            </div>
+
+            <app-selector-tarifa
+              [control]="tarifaCombo"
+              [impuestos]="impuestos()"
+              [tarifaHeredadaId]="undefined"
+              etiquetaHeredada="Según el área de sus productos"
+              inputId="tarifaCombo"
+            />
+
+            <div class="field">
+              <label for="cantidadCombo">Cantidad de combos a crear <span class="required">*</span></label>
+              <input
+                id="cantidadCombo"
+                type="number"
+                inputmode="numeric"
+                min="1"
+                [value]="cantidadCombo()"
+                (input)="onCantidadComboInput($event)"
+                [class.field--error]="errorCantidad() || itemsConStockInsuficiente().length > 0"
+                aria-required="true"
+              />
+              @if (errorCantidad()) {
+                <span class="error-msg" role="alert">{{ errorCantidad() }}</span>
+              }
+            </div>
+
+          </div>
+
+          @if (itemsConStockInsuficiente().length > 0) {
+            <div class="stock-warning" role="alert">
+              <p class="stock-warning-title">Stock insuficiente para {{ cantidadCombo() }} combo(s):</p>
+              <ul class="stock-warning-list">
+                @for (item of itemsConStockInsuficiente(); track item.productoId) {
+                  <li>
+                    <strong>{{ item.nombreCompleto }}</strong>
+                    — necesita {{ item.cantidad * cantidadCombo() | number:'1.0-0' }},
+                    disponible {{ item.stock | number:'1.0-2' }}
+                  </li>
+                }
+              </ul>
+              <p class="stock-warning-hint">Reduzca la cantidad de combos o la cantidad por producto.</p>
+            </div>
+          }
+        </div>
+
+        <div class="modal-form-section">
+          <p class="modal-section-label">Códigos de barras <span class="label-optional">(opcional)</span></p>
+          <div class="codigo-input-row">
+            <input
+              id="codigoBarraInput"
+              type="text"
+              [value]="codigoBarraInput()"
+              (input)="codigoBarraInput.set($any($event.target).value)"
+              (keydown.enter)="$event.preventDefault(); agregarCodigoCombo()"
+              placeholder="Ingrese un código y presione Enter o Agregar"
+              [disabled]="verificandoCodigo()"
+              autocomplete="off"
+            />
+            <button
+              type="button"
+              class="btn-primary"
+              (click)="agregarCodigoCombo()"
+              (keydown.enter)="$event.preventDefault()"
+              [disabled]="verificandoCodigo() || !codigoBarraInput().trim()"
+            >
+              @if (verificandoCodigo()) { Verificando... } @else { Agregar }
+            </button>
+          </div>
+
+          <div class="codigo-input-row codigo-generar-row">
+            <button
+              type="button"
+              class="btn-secondary"
+              (click)="generarCodigoBarrasCombo()"
+              [disabled]="tieneCodigoAutogenerado() || generandoCodigo()"
+            >
+              @if (generandoCodigo()) { Generando... } @else { Generar código de barras }
+            </button>
+          </div>
+
+          @if (tieneCodigoAutogenerado()) {
+            <span class="hint-msg">Este combo ya tiene un código de barras generado automáticamente</span>
+          }
+
+          @if (codigosBarras().length > 0) {
+            <div class="codigos-print-wrapper">
+              <app-codigos-barras-print-list
+                [codigos]="codigosBarras()"
+                [nombre]="nombreCombo()"
+                [eliminable]="true"
+                (eliminar)="eliminarCodigoCombo($event)"
+              />
+            </div>
+          }
+        </div>
+
+        <div class="modal-actions">
+          <button type="button" class="btn-cancel" (click)="volverAPaso1()" [disabled]="cargandoCosto()">Atrás</button>
+          <button type="button" class="btn-primary" (click)="irAResumen()" [disabled]="cargandoCosto() || itemsConStockInsuficiente().length > 0">
+            @if (cargandoCosto()) { Calculando... } @else { Siguiente }
+          </button>
+        </div>
+
+      </div>
+    </div>
+  }
+
+  @if (dialogBuscarAbierto()) {
+    <app-buscar-producto-dialog
+      [soloProductos]="true"
+      (productoSeleccionado)="onProductoSeleccionadoDesdeDialog($event)"
+      (cerrado)="cerrarDialogBuscar()"
+    ></app-buscar-producto-dialog>
+  }
+
+  <!-- Modal cantidad -->
+  @if (modalAbierto() && modalProducto()) {
+    <div
+      class="modal-backdrop"
+      (click)="cerrarModal()"
+      role="dialog"
+      aria-modal="true"
+      [attr.aria-label]="modalModo() === 'agregar' ? 'Agregar producto al combo' : 'Editar cantidad'"
+    >
+      <div class="modal-card" (click)="$event.stopPropagation()">
+        <h3 class="modal-title">{{ modalModo() === 'agregar' ? 'Agregar al combo' : 'Editar cantidad' }}</h3>
+        <p class="modal-product-name">{{ modalProducto()!.nombreCompleto }}</p>
+        <div class="modal-stock-info">
+          <span class="modal-stock-label">Stock disponible</span>
+          <span class="modal-stock-value">{{ modalProducto()!.stock | number:'1.0-2' }}</span>
+        </div>
+        <div class="modal-field">
+          <input
+            #cantidadInput
+            type="number"
+            inputmode="numeric"
+            min="1"
+            [max]="modalProducto()!.stock"
+            [value]="modalCantidad()"
+            (input)="onCantidadInput($event)"
+            (keydown)="onCantidadKeydown($event)"
+            aria-label="Cantidad a añadir al combo"
+          />
+        </div>
+        <div class="modal-actions">
+          <button type="button" class="btn-cancel" (click)="cerrarModal()">Cancelar</button>
+          <button
+            #agregarBtn
+            type="button"
+            class="btn-primary"
+            (click)="confirmarModal()"
+            (keydown)="onAgregarKeydown($event)"
+            [disabled]="modalCantidad() < 1 || modalCantidad() > modalProducto()!.stock"
+          >
+            {{ modalModo() === 'agregar' ? 'Agregar' : 'Actualizar' }}
+          </button>
+        </div>
+      </div>
+    </div>
+  }
+
+  <!-- Dialog resumen — confirmación antes de guardar -->
+  @if (resumenAbierto()) {
+    <div class="modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="resumen-title">
+      <div class="modal-card modal-card--paso2" (click)="$event.stopPropagation()">
+
+        <div class="modal-paso2-header">
+          <h3 id="resumen-title" class="modal-title">Resumen del combo</h3>
+        </div>
+
+        <dl class="resumen-meta-dialog">
+          <dt>Nombre</dt>          <dd>{{ nombreCombo() }}</dd>
+          <dt>Precio de venta</dt> <dd>{{ precioBase() | number:'1.0-2' }}</dd>
+          <dt>Cantidad de combos</dt> <dd>{{ cantidadCombo() }}</dd>
+          @if (costoResult()) {
+            <dt>Costo por unidad</dt>  <dd>{{ costoResult()!.costoTotal | number:'1.0-2' }}</dd>
+            <dt>Costo total (× {{ cantidadCombo() }})</dt> <dd class="resumen-costo-value">{{ costoTotalCombos() | number:'1.0-2' }}</dd>
+          }
+        </dl>
+
+        @if (costoResult()) {
+          <div class="modal-costo-section">
+            <p class="modal-section-label">Detalle de productos</p>
+            <table class="modal-costo-table" aria-label="Detalle de productos del combo">
+              <thead>
+                <tr>
+                  <th scope="col">Producto</th>
+                  <th scope="col" class="col-num">Cant.</th>
+                  <th scope="col" class="col-num">Costo unit.</th>
+                  <th scope="col" class="col-num">Subtotal</th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (item of costoResult()!.items; track item.productoId) {
+                  <tr>
+                    <td>{{ item.nombreProducto }}</td>
+                    <td class="col-num">{{ item.cantidad | number:'1.0-2' }}</td>
+                    <td class="col-num">{{ item.costoUnitario | number:'1.0-2' }}</td>
+                    <td class="col-num">{{ item.costoItem | number:'1.0-2' }}</td>
+                  </tr>
+                }
+              </tbody>
+              <tfoot>
+                <tr>
+                  <td colspan="3" class="total-label">Costo total</td>
+                  <td class="col-num total-value">{{ costoResult()!.costoTotal | number:'1.0-2' }}</td>
+                </tr>
+              </tfoot>
+            </table>
+          </div>
+        }
+
+        <div class="modal-actions">
+          <button type="button" class="btn-cancel" (click)="volverAPaso2()" [disabled]="guardando()">Atrás</button>
+          <button type="button" class="btn-primary" (click)="guardarCombo()" [disabled]="guardando()">
+            @if (guardando()) { Guardando... } @else { Guardar combo }
+          </button>
+        </div>
+
+      </div>
+    </div>
+  }
+
+  <!-- Dialog editar combo -->
+  @if (editarAbierto() && comboSeleccionado()) {
+    <div class="modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="editar-title">
+      <div class="modal-card modal-card--paso2" (click)="$event.stopPropagation()">
+
+        <div class="modal-paso2-header">
+          <h3 id="editar-title" class="modal-title">Editar combo</h3>
+        </div>
+
+        @if (cargandoEditDetalle()) {
+          <div class="modal-costo-section"><p class="modal-section-label" style="margin:0">Cargando composición...</p></div>
+        } @else if (editCosto()) {
+          <div class="modal-costo-section">
+            <p class="modal-section-label">Composición del combo</p>
+            <table class="modal-costo-table" aria-label="Productos del combo">
+              <thead>
+                <tr>
+                  <th scope="col">Producto</th>
+                  <th scope="col" class="col-num">Cant.</th>
+                  <th scope="col" class="col-num">Costo unit.</th>
+                  <th scope="col" class="col-num">Subtotal</th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (item of editCosto()!.items; track item.productoId) {
+                  <tr>
+                    <td>{{ item.nombreProducto }}</td>
+                    <td class="col-num">{{ item.cantidad | number:'1.0-2' }}</td>
+                    <td class="col-num">{{ item.costoUnitario | number:'1.0-2' }}</td>
+                    <td class="col-num">{{ item.costoItem | number:'1.0-2' }}</td>
+                  </tr>
+                }
+              </tbody>
+              <tfoot>
+                <tr>
+                  <td colspan="3" class="total-label">Costo total</td>
+                  <td class="col-num total-value">{{ editCosto()!.costoTotal | number:'1.0-2' }}</td>
+                </tr>
+              </tfoot>
+            </table>
+          </div>
+        }
+
+        <div class="modal-form-section">
+          <div class="modal-form-fields">
+
+            <div class="field">
+              <label for="editNombre">Nombre <span class="required">*</span></label>
+              <input
+                id="editNombre"
+                type="text"
+                [value]="editNombre()"
+                (input)="editNombre.set($any($event.target).value)"
+                placeholder="Nombre del combo"
+                [class.field--error]="errorEditNombre()"
+                aria-required="true"
+              />
+              @if (errorEditNombre()) {
+                <span class="error-msg" role="alert">{{ errorEditNombre() }}</span>
+              }
+            </div>
+
+            <div class="field">
+              <label for="editPrecioBase">Precio de venta <span class="required">*</span></label>
+              <input
+                id="editPrecioBase"
+                type="text"
+                inputmode="numeric"
+                [value]="editPrecioBaseDisplay()"
+                (input)="onEditPrecioInput($event)"
+                placeholder="Ej. 5.000"
+                [class.field--error]="errorEditPrecio()"
+                aria-required="true"
+              />
+              @if (errorEditPrecio()) {
+                <span class="error-msg" role="alert">{{ errorEditPrecio() }}</span>
+              }
+            </div>
+
+            <app-selector-tarifa
+              [control]="editTarifa"
+              [impuestos]="impuestos()"
+              [tarifaHeredadaId]="undefined"
+              etiquetaHeredada="Según el área de sus productos"
+              inputId="editTarifa"
+            />
+
+            <div class="field">
+              <label for="editCantidad">Cantidad disponible <span class="required">*</span></label>
+              <input
+                id="editCantidad"
+                type="number"
+                inputmode="numeric"
+                min="0"
+                [value]="editCantidadDisponible()"
+                (input)="onEditCantidadInput($event)"
+                [class.field--error]="errorEditCantidad()"
+                aria-required="true"
+              />
+              @if (editCantidadDisponible() > (comboSeleccionado()?.cantidadDisponible ?? 0)) {
+                <span class="edit-hint">
+                  Aumenta en {{ editCantidadDisponible() - (comboSeleccionado()?.cantidadDisponible ?? 0) }} unidades — se validará stock disponible.
+                </span>
+              }
+              @if (errorEditCantidad()) {
+                <span class="error-msg" role="alert">{{ errorEditCantidad() }}</span>
+              }
+            </div>
+
+            <div class="field">
+              <label for="editActivo">Estado</label>
+              <select
+                id="editActivo"
+                [value]="editActivo()"
+                (change)="editActivo.set($any($event.target).value === 'true')"
+                aria-label="Estado del combo"
+              >
+                <option value="true">Activo</option>
+                <option value="false">Inactivo</option>
+              </select>
+            </div>
+
+          </div>
+        </div>
+
+        <div class="modal-form-section">
+          <p class="modal-section-label">Códigos de barras <span class="label-optional">(opcional)</span></p>
+          <div class="codigo-input-row">
+            <input
+              type="text"
+              [value]="editCodigoBarraInput()"
+              (input)="editCodigoBarraInput.set($any($event.target).value)"
+              (keydown.enter)="$event.preventDefault(); agregarCodigoEdit()"
+              placeholder="Ingrese un código y presione Enter o Agregar"
+              [disabled]="editVerificandoCodigo()"
+              autocomplete="off"
+            />
+            <button
+              type="button"
+              class="btn-primary"
+              (click)="agregarCodigoEdit()"
+              [disabled]="editVerificandoCodigo() || !editCodigoBarraInput().trim()"
+            >
+              @if (editVerificandoCodigo()) { Verificando... } @else { Agregar }
+            </button>
+          </div>
+
+          <div class="codigo-input-row codigo-generar-row">
+            <button
+              type="button"
+              class="btn-secondary"
+              (click)="generarCodigoBarrasEdit()"
+              [disabled]="editTieneCodigoAutogenerado() || editGenerandoCodigo()"
+            >
+              @if (editGenerandoCodigo()) { Generando... } @else { Generar código de barras }
+            </button>
+          </div>
+
+          @if (editTieneCodigoAutogenerado()) {
+            <span class="hint-msg">Este combo ya tiene un código de barras generado automáticamente</span>
+          }
+
+          @if (editCodigosBarras().length > 0) {
+            <div class="codigos-print-wrapper">
+              <app-codigos-barras-print-list
+                [codigos]="editCodigosBarras()"
+                [nombre]="editNombre()"
+                [eliminable]="true"
+                (eliminar)="eliminarCodigoEdit($event)"
+              />
+            </div>
+          }
+        </div>
+
+        <div class="modal-actions">
+          <button type="button" class="btn-cancel" (click)="cerrarEditar()" [disabled]="guardandoEdit()">Cancelar</button>
+          <button type="button" class="btn-primary" (click)="guardarEdicion()" [disabled]="guardandoEdit()">
+            @if (guardandoEdit()) { Guardando... } @else { Guardar cambios }
+          </button>
+        </div>
+
+      </div>
+    </div>
+  }
+
+  <!-- Detalle combo -->
+  @if (comboDetalle()) {
+    <app-detalle-combo-dialog
+      [combo]="comboDetalle()!"
+      [cargando]="cargandoDetalle()"
+      [costo]="costoDetalle()"
+      (cerrado)="cerrarDetalle()"
+    ></app-detalle-combo-dialog>
+  }
+
+  <!-- Códigos de barras -->
+  @if (comboCodigosBarras()) {
+    <app-codigos-barras-combo-dialog
+      [combo]="comboCodigosBarras()!"
+      (cerrado)="cerrarCodigosBarras()"
+    ></app-codigos-barras-combo-dialog>
+  }
+
+
+</div>

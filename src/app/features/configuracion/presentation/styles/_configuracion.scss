@@ -1,0 +1,342 @@
+// Estilos compartidos por las pantallas y diálogos de Configuración.
+// Siguen los mismos patrones visuales que Combos y Pérdidas.
+
+.page {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+// ── Toolbar ────────────────────────────────────────────────────────────────────
+.toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+
+  h1 {
+    font-family: var(--font-display);
+    font-size: 1.25rem;
+    color: var(--color-text);
+  }
+}
+
+.toolbar-hint {
+  font-size: 0.875rem;
+  color: var(--color-text-muted);
+  margin-top: 0.25rem;
+}
+
+// ── Buttons ───────────────────────────────────────────────────────────────────
+%btn-base {
+  padding: 0.5rem 1.25rem;
+  border-radius: 6px;
+  font-size: 0.875rem;
+  font-weight: 500;
+  font-family: inherit;
+  cursor: pointer;
+  transition: background 0.15s, opacity 0.15s;
+
+  &:focus-visible {
+    outline: 2px solid var(--color-accent);
+    outline-offset: 2px;
+  }
+
+  &:disabled { opacity: 0.5; cursor: not-allowed; }
+}
+
+.btn-primary {
+  @extend %btn-base;
+  background: var(--color-primary);
+  color: var(--color-on-primary);
+  border: none;
+
+  &:hover:not(:disabled) { background: var(--color-primary-light); }
+}
+
+.btn-secondary {
+  @extend %btn-base;
+  background: none;
+  color: var(--color-text);
+  border: 1px solid var(--color-border);
+
+  &:hover:not(:disabled) { background: var(--color-surface); }
+}
+
+.btn-danger {
+  @extend %btn-base;
+  background: var(--color-error);
+  color: #fff;
+  border: none;
+
+  &:hover:not(:disabled) { opacity: 0.88; }
+}
+
+.btn-icon {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.3rem 0.625rem;
+  border-radius: 5px;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  font-family: inherit;
+  cursor: pointer;
+  border: 1px solid transparent;
+  background: transparent;
+  color: var(--color-primary);
+  transition: background 0.12s, border-color 0.12s;
+
+  &:hover:not(:disabled) {
+    background: color-mix(in srgb, var(--color-accent) 14%, transparent);
+    border-color: color-mix(in srgb, var(--color-accent) 35%, transparent);
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--color-accent);
+    outline-offset: 1px;
+  }
+
+  &:disabled { opacity: 0.4; cursor: not-allowed; }
+
+  &--danger {
+    color: var(--color-error);
+
+    &:hover:not(:disabled) {
+      background: color-mix(in srgb, var(--color-error) 8%, transparent);
+      border-color: color-mix(in srgb, var(--color-error) 25%, transparent);
+    }
+  }
+}
+
+// ── Table ─────────────────────────────────────────────────────────────────────
+.table-wrapper {
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  overflow: auto;
+  background: var(--color-surface-alt);
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.9375rem;
+  }
+
+  thead th {
+    padding: 0.625rem 1rem;
+    text-align: left;
+    font-size: 0.8125rem;
+    font-weight: 600;
+    color: var(--color-text-muted);
+    background: var(--color-surface-alt);
+    white-space: nowrap;
+    border-bottom: 1px solid var(--color-border);
+  }
+
+  tbody tr {
+    border-bottom: 1px solid var(--color-border);
+    transition: background 0.1s;
+
+    &:last-child { border-bottom: none; }
+    &:hover { background: var(--color-surface); }
+  }
+
+  tbody td {
+    padding: 0.75rem 1rem;
+    color: var(--color-text);
+    vertical-align: middle;
+  }
+}
+
+.col-name { font-weight: 500; }
+.col-muted { color: var(--color-text-muted); font-size: 0.875rem; }
+.col-num { text-align: right !important; white-space: nowrap; }
+.col-actions {
+  white-space: nowrap;
+  text-align: right !important;
+
+  .btn-icon + .btn-icon { margin-left: 0.25rem; }
+}
+
+.state-cell {
+  text-align: center;
+  color: var(--color-text-muted);
+  padding: 2.5rem 1rem !important;
+}
+
+// ── Badge ──────────────────────────────────────────────────────────────────────
+.badge {
+  display: inline-block;
+  padding: 0.2rem 0.6rem;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  white-space: nowrap;
+
+  &--activo { background: #dcfce7; color: #166534; }
+  &--inactivo { background: #f3f4f6; color: #4b5563; }
+  &--bloqueado { background: #fee2e2; color: #991b1b; }
+  &--pendiente { background: #fef3c7; color: #92400e; }
+
+  & + & { margin-left: 0.25rem; }
+}
+
+// ── Error ──────────────────────────────────────────────────────────────────────
+.error {
+  padding: 0.625rem 0.875rem;
+  background: color-mix(in srgb, var(--color-error) 6%, transparent);
+  border: 1px solid color-mix(in srgb, var(--color-error) 20%, transparent);
+  border-radius: 6px;
+  font-size: 0.875rem;
+  color: var(--color-error);
+}
+
+// ── Dialog ─────────────────────────────────────────────────────────────────────
+.backdrop {
+  position: fixed;
+  inset: 0;
+  background: color-mix(in srgb, var(--color-primary) 35%, transparent);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 1rem;
+}
+
+.dialog {
+  background: var(--color-surface-alt);
+  border: 1px solid var(--color-border);
+  border-radius: 10px;
+  width: 100%;
+  max-width: 520px;
+  max-height: 90vh;
+  box-shadow: 0 24px 64px color-mix(in srgb, var(--color-primary) 18%, transparent);
+  display: flex;
+  flex-direction: column;
+
+  &--wide { max-width: 760px; }
+  &--narrow { max-width: 420px; }
+}
+
+.dialog-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1.125rem 1.5rem;
+  border-bottom: 1px solid var(--color-border);
+  flex-shrink: 0;
+}
+
+.dialog-title {
+  font-family: var(--font-display);
+  font-size: 1.125rem;
+  font-weight: 700;
+  color: var(--color-text);
+  margin: 0;
+}
+
+.dialog-close {
+  background: none;
+  border: none;
+  font-size: 1rem;
+  line-height: 1;
+  cursor: pointer;
+  color: var(--color-text-muted);
+  padding: 0.25rem 0.375rem;
+  border-radius: 4px;
+
+  &:hover { background: var(--color-surface); color: var(--color-text); }
+
+  &:focus-visible {
+    outline: 2px solid var(--color-accent);
+    outline-offset: 1px;
+  }
+}
+
+.dialog-body {
+  padding: 1.25rem 1.5rem;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.dialog-text {
+  font-size: 0.9375rem;
+  color: var(--color-text);
+  line-height: 1.5;
+}
+
+.dialog-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.5rem;
+  padding: 1rem 1.5rem;
+  border-top: 1px solid var(--color-border);
+  flex-shrink: 0;
+}
+
+// ── Form ───────────────────────────────────────────────────────────────────────
+.form-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+
+  @media (max-width: 560px) { grid-template-columns: 1fr; }
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.375rem;
+
+  label, .field-label {
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: var(--color-text);
+  }
+
+  input[type='text'],
+  input[type='password'],
+  select,
+  textarea {
+    padding: 0.5rem 0.75rem;
+    border: 1px solid var(--color-border);
+    border-radius: 6px;
+    font-size: 0.9375rem;
+    font-family: inherit;
+    background: var(--color-surface-alt);
+    color: var(--color-text);
+    transition: border-color 0.15s, box-shadow 0.15s;
+
+    &:focus {
+      outline: none;
+      border-color: var(--color-accent);
+      box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-accent) 18%, transparent);
+    }
+
+    &:disabled {
+      background: var(--color-surface);
+      color: var(--color-text-muted);
+    }
+
+    &[aria-invalid='true'] { border-color: var(--color-error); }
+  }
+
+  textarea { resize: vertical; min-height: 60px; }
+}
+
+.required { color: var(--color-error); margin-left: 0.125rem; }
+.error-msg { font-size: 0.8125rem; color: var(--color-error); }
+.hint-msg { font-size: 0.8125rem; color: var(--color-text-muted); }
+
+.check {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.875rem;
+  color: var(--color-text);
+  cursor: pointer;
+
+  input { accent-color: var(--color-primary); width: 16px; height: 16px; }
+}

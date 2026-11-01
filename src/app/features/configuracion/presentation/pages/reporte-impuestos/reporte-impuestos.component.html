@@ -1,0 +1,108 @@
+<div class="page">
+  <div class="toolbar">
+    <div>
+      <h1>Reporte de impuestos</h1>
+      <p class="toolbar-hint">
+        Impuestos incluidos en las ventas del periodo, por tarifa. Las devoluciones restan en la fecha en que se hicieron.
+      </p>
+    </div>
+    <button type="button" class="btn-secondary" (click)="descargarCsv()" [disabled]="!reporte() || reporte()!.filas.length === 0">
+      Descargar CSV
+    </button>
+  </div>
+
+  <form class="tarjeta filtros" [formGroup]="form" (ngSubmit)="consultar()" novalidate>
+    <div class="periodos" role="group" aria-label="Periodos rápidos">
+      @for (p of periodos; track p.valor) {
+        <button type="button" class="btn-icon" (click)="usarPeriodo(p.valor)">{{ p.etiqueta }}</button>
+      }
+    </div>
+    <div class="rango">
+      <div class="field">
+        <label for="reporte-desde">Desde</label>
+        <input id="reporte-desde" type="date" formControlName="desde" />
+      </div>
+      <div class="field">
+        <label for="reporte-hasta">Hasta</label>
+        <input id="reporte-hasta" type="date" formControlName="hasta" />
+      </div>
+      <button type="submit" class="btn-primary" [disabled]="form.invalid || cargando()">
+        {{ cargando() ? 'Consultando…' : 'Consultar' }}
+      </button>
+    </div>
+  </form>
+
+  @if (error()) {
+    <div class="error" role="alert">{{ error() }}</div>
+  }
+
+  @if (reporte(); as r) {
+    <div class="resumen" aria-live="polite">
+      @for (t of r.totales; track t.tipo) {
+        <div class="kpi">
+          <span class="kpi-etiqueta">{{ t.tipo }} neto del periodo</span>
+          <span class="kpi-valor">$ {{ t.netoImpuesto | number: '1.0-0' }}</span>
+          <span class="kpi-detalle">Base: $ {{ t.netoBase | number: '1.0-0' }}</span>
+        </div>
+      } @empty {
+        <div class="kpi">
+          <span class="kpi-etiqueta">Impuestos del periodo</span>
+          <span class="kpi-valor">$ 0</span>
+        </div>
+      }
+    </div>
+
+    <div class="table-wrapper">
+      <table aria-label="Impuestos por tarifa">
+        <thead>
+          <tr>
+            <th scope="col">Tarifa</th>
+            <th scope="col">Clasificación</th>
+            <th scope="col" class="col-num">Ventas (base)</th>
+            <th scope="col" class="col-num">Ventas (impuesto)</th>
+            <th scope="col" class="col-num">Devoluciones (base)</th>
+            <th scope="col" class="col-num">Devoluciones (impuesto)</th>
+            <th scope="col" class="col-num">Neto (base)</th>
+            <th scope="col" class="col-num">Neto (impuesto)</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (f of r.filas; track f.nombre + f.tipo + f.porcentaje) {
+            <tr>
+              <td class="col-name">{{ f.nombre }}</td>
+              <td>{{ etiquetaClasificacion(f) }}</td>
+              <td class="col-num">$ {{ f.ventasBase | number: '1.0-2' }}</td>
+              <td class="col-num">$ {{ f.ventasImpuesto | number: '1.0-2' }}</td>
+              <td class="col-num">$ {{ f.devolucionesBase | number: '1.0-2' }}</td>
+              <td class="col-num">$ {{ f.devolucionesImpuesto | number: '1.0-2' }}</td>
+              <td class="col-num">$ {{ f.netoBase | number: '1.0-2' }}</td>
+              <td class="col-num col-total">$ {{ f.netoImpuesto | number: '1.0-2' }}</td>
+            </tr>
+          } @empty {
+            <tr>
+              <td colspan="8" class="state-cell">
+                No hay ventas con impuestos desglosados en este periodo.
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+
+    @if (r.ventasSinDesglose > 0 || r.ajusteRedondeo !== 0) {
+      <div class="notas">
+        @if (r.ventasSinDesglose > 0) {
+          <p class="aviso">
+            {{ r.ventasSinDesglose }} venta(s) del periodo no tienen desglose de impuestos: se registraron antes de activar
+            "Responsable de IVA" o con el negocio como no responsable. No se incluyen en este reporte.
+          </p>
+        }
+        @if (r.ajusteRedondeo !== 0) {
+          <p class="aviso">
+            Ajustes por redondeo del total en el periodo: $ {{ r.ajusteRedondeo | number: '1.0-2' }} (no gravados, no incluidos arriba).
+          </p>
+        }
+      </div>
+    }
+  }
+</div>

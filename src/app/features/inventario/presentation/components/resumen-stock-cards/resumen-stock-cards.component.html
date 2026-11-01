@@ -1,0 +1,31 @@
+@if (resumen(); as r) {
+  <section class="resumen-seccion">
+    <h3 class="resumen-seccion__titulo">{{ titulo() }}</h3>
+    <div class="resumen-grid" [attr.aria-label]="'Resumen de inventario - ' + titulo()">
+      <div class="resumen-card">
+        <span class="resumen-card__label">Productos en stock</span>
+        <span class="resumen-card__value">{{ r.totalProductos | number }}</span>
+      </div>
+      <div class="resumen-card">
+        <span class="resumen-card__label">Costo total inventario</span>
+        <span class="resumen-card__value">{{ r.costoTotalInventario | number:'1.0-2' }}</span>
+      </div>
+      <div class="resumen-card">
+        <span class="resumen-card__label">Valor a precio venta</span>
+        <span class="resumen-card__value">{{ r.valorVentaTotal | number:'1.0-2' }}</span>
+      </div>
+      <div class="resumen-card" [class.resumen-card--positivo]="r.margenBrutoTotal >= 0" [class.resumen-card--negativo]="r.margenBrutoTotal < 0">
+        <span class="resumen-card__label">Margen bruto potencial</span>
+        <span class="resumen-card__value">{{ r.margenBrutoTotal | number:'1.0-2' }}</span>
+      </div>
+      <div class="resumen-card">
+        <span class="resumen-card__label">Sin stock</span>
+        <span class="resumen-card__value">{{ r.productosSinStock | number }}</span>
+      </div>
+      <div class="resumen-card">
+        <span class="resumen-card__label">Activos / Inactivos</span>
+        <span class="resumen-card__value">{{ r.productosActivos | number }} / {{ r.productosInactivos | number }}</span>
+      </div>
+    </div>
+  </section>
+}

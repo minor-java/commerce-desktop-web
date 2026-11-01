@@ -1,0 +1,161 @@
+<div class="backdrop" (click)="cerrar()">
+  <div
+    class="dialog dialog--wide"
+    role="dialog"
+    aria-modal="true"
+    aria-labelledby="rol-dialog-titulo"
+    (click)="$event.stopPropagation()"
+  >
+    <div class="dialog-header">
+      <h2 id="rol-dialog-titulo" class="dialog-title">{{ esEdicion() ? 'Editar rol' : 'Nuevo rol' }}</h2>
+      <button type="button" class="dialog-close" (click)="cerrar()" aria-label="Cerrar">✕</button>
+    </div>
+
+    <form [formGroup]="form" (ngSubmit)="guardar()" novalidate class="dialog-form">
+      <div class="dialog-body">
+        <div class="form-row">
+          <div class="field">
+            <label for="r-nombre">Nombre<span class="required" aria-hidden="true">*</span></label>
+            <input
+              id="r-nombre"
+              type="text"
+              formControlName="nombre"
+              autocomplete="off"
+              aria-describedby="r-nombre-ayuda"
+              [attr.aria-invalid]="form.controls.nombre.invalid && form.controls.nombre.touched ? 'true' : null"
+            />
+            <span
+              id="r-nombre-ayuda"
+              class="hint-msg"
+              [class.error-msg]="form.controls.nombre.invalid && form.controls.nombre.touched"
+            >Entre 3 y 50 caracteres. Se guarda en mayúsculas.</span>
+          </div>
+
+          <div class="field">
+            <label for="r-descripcion">Descripción</label>
+            <input id="r-descripcion" type="text" formControlName="descripcion" autocomplete="off" />
+          </div>
+        </div>
+
+        <fieldset class="permisos" aria-describedby="permisos-ayuda">
+          <legend class="field-label">Módulos y permisos<span class="required" aria-hidden="true">*</span></legend>
+          <p id="permisos-ayuda" class="hint-msg" [class.error-msg]="sinPermisos()">
+            {{ sinPermisos() ? 'Seleccione al menos un permiso.' : 'Cada tarjeta es una pantalla: márquela para permitirla y elija sus opciones. Marcar una opción permite la pantalla automáticamente.' }}
+          </p>
+          @if (ventaSinMetodoPago()) {
+            <p class="hint-msg error-msg" role="status">
+              Con "Registrar ventas" marque al menos un método de pago (efectivo o transferencia); si no, no podrá cobrar.
+            </p>
+          }
+
+          <div class="modulos">
+            @for (modulo of modulos(); track modulo.modulo) {
+              <section class="modulo" [attr.aria-labelledby]="'mod-' + modulo.modulo">
+                <div class="modulo-header">
+                  <h3 class="modulo-titulo">
+                    <button
+                      type="button"
+                      class="modulo-toggle"
+                      [id]="'mod-' + modulo.modulo"
+                      [attr.aria-expanded]="estaExpandido(modulo.modulo)"
+                      [attr.aria-controls]="'panel-' + modulo.modulo"
+                      (click)="alternarExpandido(modulo.modulo)"
+                    >
+                      <svg class="chevron" [class.chevron--abierto]="estaExpandido(modulo.modulo)" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                        <polyline points="9 18 15 12 9 6" />
+                      </svg>
+                      {{ modulo.etiqueta }}
+                      <span class="modulo-contador" [class.modulo-contador--activo]="cantidadSeleccionada(modulo.todos) > 0">
+                        {{ cantidadSeleccionada(modulo.todos) }}/{{ modulo.todos.length }}
+                        <span class="sr-only"> permisos marcados</span>
+                      </span>
+                    </button>
+                  </h3>
+                  <button type="button" class="btn-icon" (click)="alternarModulo(modulo)">
+                    {{ moduloCompleto(modulo) ? 'Quitar todos' : 'Marcar todos' }}
+                    <span class="sr-only"> los permisos de {{ modulo.etiqueta }}</span>
+                  </button>
+                </div>
+
+                @if (estaExpandido(modulo.modulo)) {
+                  <div class="secciones" [id]="'panel-' + modulo.modulo">
+                    @for (seccion of modulo.secciones; track seccion.nombre) {
+                      <div class="seccion" [class.seccion--activa]="seccionPermitida(seccion)">
+                        <label class="seccion-header" [class.permiso--bloqueado]="seccionBloqueada(seccion)">
+                          <input
+                            type="checkbox"
+                            [checked]="seccionMarcada(seccion)"
+                            [indeterminate]="seccionParcial(seccion)"
+                            [disabled]="seccionBloqueada(seccion)"
+                            (change)="alternarSeccion(seccion)"
+                            [attr.aria-describedby]="'est-' + modulo.modulo + '-' + $index"
+                          />
+                          <span class="permiso-texto">
+                            <span class="seccion-nombre">{{ seccion.nombre }}</span>
+                            <span class="permiso-desc">
+                              @if (seccion.raiz) {
+                                {{ motivoBloqueo(seccion.raiz.codigo) ?? seccion.raiz.nombre }}
+                              } @else {
+                                Opciones independientes
+                              }
+                            </span>
+                          </span>
+                          <span
+                            class="seccion-estado"
+                            [class.seccion-estado--activo]="seccionPermitida(seccion)"
+                            [id]="'est-' + modulo.modulo + '-' + $index"
+                          >{{ estadoSeccion(seccion) }}</span>
+                        </label>
+
+                        @if (seccion.opciones.length > 0) {
+                          <ul
+                            class="permiso-lista opciones"
+                            [class.opciones--inactivas]="seccion.raiz && !seccionMarcada(seccion)"
+                            role="list"
+                            [attr.aria-label]="'Opciones de ' + seccion.nombre"
+                          >
+                            @for (permiso of seccion.opciones; track permiso.codigo) {
+                              <li [class.subopcion]="esSubopcion(permiso)">
+                                <label class="permiso" [class.permiso--bloqueado]="estaBloqueado(permiso.codigo)">
+                                  <input
+                                    type="checkbox"
+                                    [checked]="estaSeleccionado(permiso.codigo)"
+                                    [disabled]="estaBloqueado(permiso.codigo)"
+                                    (change)="alternar(permiso.codigo)"
+                                    [attr.aria-describedby]="'desc-' + permiso.codigo"
+                                  />
+                                  <span class="permiso-texto">
+                                    <span class="permiso-nombre">{{ permiso.nombre }}</span>
+                                    <span class="permiso-desc" [id]="'desc-' + permiso.codigo">
+                                      {{ motivoBloqueo(permiso.codigo) ?? permiso.descripcion }}
+                                    </span>
+                                  </span>
+                                </label>
+                              </li>
+                            }
+                          </ul>
+                        }
+                      </div>
+                    }
+                  </div>
+                }
+              </section>
+            }
+          </div>
+        </fieldset>
+
+        @if (error()) {
+          <p class="error" role="alert">{{ error() }}</p>
+        }
+      </div>
+
+      <div class="dialog-footer">
+        <span class="contador" aria-live="polite">{{ seleccionados().size }} permiso(s) seleccionado(s)</span>
+        <button type="button" class="btn-secondary" (click)="cerrar()" [disabled]="guardando()">Cancelar</button>
+        <button type="submit" class="btn-primary" [disabled]="guardando()">
+          {{ guardando() ? 'Guardando…' : 'Guardar' }}
+        </button>
+      </div>
+    </form>
+  </div>
+</div>

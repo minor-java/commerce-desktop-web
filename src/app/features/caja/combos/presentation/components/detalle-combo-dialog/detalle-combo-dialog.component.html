@@ -1,0 +1,91 @@
+﻿<div class="backdrop" (click)="onCerrar()" role="dialog" aria-modal="true" [attr.aria-label]="'Detalle del combo ' + combo().nombre">
+  <div class="dialog" (click)="$event.stopPropagation()">
+
+    <div class="dialog-header">
+      <h2 class="dialog-title">Detalle del combo</h2>
+      <button type="button" class="dialog-close" (click)="onCerrar()" aria-label="Cerrar">✕</button>
+    </div>
+
+    @if (cargando()) {
+      <p class="dialog-loading" aria-live="polite">Cargando detalle...</p>
+    } @else {
+
+      <dl class="combo-meta">
+        <dt>Nombre</dt>        <dd>{{ combo().nombre }}</dd>
+        <dt>Precio base</dt>   <dd>{{ combo().precioBase | number:'1.0-2' }}</dd>
+        @if (costo()) {
+          <dt>Costo total</dt> <dd class="costo-total-meta">{{ costo()!.costoTotal | number:'1.0-2' }}</dd>
+        }
+        <dt>Estado</dt>
+        <dd>
+          <span class="badge" [class.badge--activo]="combo().activo" [class.badge--inactivo]="!combo().activo">
+            {{ combo().activo ? 'Activo' : 'Inactivo' }}
+          </span>
+        </dd>
+        <dt>Fecha creación</dt><dd>{{ formatearFecha(combo().fechaCreacion) }}</dd>
+      </dl>
+
+      @if (combo().detalles && combo().detalles.length > 0) {
+        <div class="dialog-section-title">Productos incluidos</div>
+        <div class="table-wrapper">
+          <table aria-label="Productos del combo">
+            <thead>
+              <tr>
+                <th scope="col">Producto</th>
+                <th scope="col" class="col-num">Cantidad</th>
+                @if (costo()) {
+                  <th scope="col" class="col-num">Costo unitario</th>
+                  <th scope="col" class="col-num">Subtotal costo</th>
+                }
+              </tr>
+            </thead>
+            <tbody>
+              @for (detalle of combo().detalles; track detalle.id) {
+                <tr>
+                  <td>
+                    {{ costoByProductoId().get(detalle.productoId)?.nombre ?? ('Producto #' + detalle.productoId) }}
+                  </td>
+                  <td class="col-num">{{ detalle.cantidad | number:'1.0-2' }}</td>
+                  @if (costo()) {
+                    <td class="col-num">
+                      @if (costoByProductoId().get(detalle.productoId); as c) {
+                        {{ c.unitario | number:'1.0-2' }}
+                      } @else { — }
+                    </td>
+                    <td class="col-num">
+                      @if (costoByProductoId().get(detalle.productoId); as c) {
+                        {{ c.total | number:'1.0-2' }}
+                      } @else { — }
+                    </td>
+                  }
+                </tr>
+              }
+            </tbody>
+            @if (costo()) {
+              <tfoot>
+                <tr>
+                  <td colspan="3" class="total-label">Costo total</td>
+                  <td class="col-num total-value">{{ costo()!.costoTotal | number:'1.0-2' }}</td>
+                </tr>
+              </tfoot>
+            }
+          </table>
+        </div>
+      } @else {
+        <p class="dialog-empty">Este combo no tiene productos registrados.</p>
+      }
+    }
+
+    @if (combo().codigosBarras && combo().codigosBarras.length > 0) {
+      <div class="dialog-section-title">Códigos de barras</div>
+      <div class="codigos-section">
+        <app-codigos-barras-print-list [codigos]="combo().codigosBarras" [nombre]="combo().nombre" />
+      </div>
+    }
+
+    <div class="dialog-footer">
+      <button type="button" class="btn-cancel" (click)="onCerrar()">Cerrar</button>
+    </div>
+
+  </div>
+</div>

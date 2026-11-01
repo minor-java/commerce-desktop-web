@@ -1,0 +1,288 @@
+﻿<div class="page">
+  <div class="toolbar">
+    <h2>Nueva Compra</h2>
+  </div>
+
+  <form [formGroup]="headerForm" class="header-form" novalidate>
+    <div class="field-group">
+      <div class="field">
+        <label for="proveedor" class="field-label">Proveedor</label>
+        <input
+          id="proveedor"
+          type="text"
+          class="field-input"
+          formControlName="proveedor"
+          placeholder="Nombre del proveedor (opcional)"
+          autocomplete="off"
+        />
+      </div>
+      <div class="field">
+        <label for="observacion" class="field-label">Observación</label>
+        <input
+          id="observacion"
+          type="text"
+          class="field-input"
+          formControlName="observacion"
+          placeholder="Observaciones (opcional)"
+          autocomplete="off"
+        />
+      </div>
+    </div>
+  </form>
+
+  <section class="scanner-section" aria-label="Escáner de productos">
+    <label for="scanner-input" class="field-label">Producto</label>
+    <div class="scanner-row">
+      <input
+        #productoInput
+        id="scanner-input"
+        type="text"
+        class="field-input scanner-input"
+        placeholder="Escanee un código de barras y presione Enter"
+        autocomplete="off"
+        [attr.aria-busy]="buscandoProducto()"
+        (input)="limpiarMensajesEscaneo()"
+        (keydown.enter)="$event.preventDefault(); onCodigoEscaneado($event)"
+        aria-describedby="scanner-hint"
+      />
+      <button
+        class="btn-primary"
+        type="button"
+        (click)="abrirDialogBuscar()"
+        [disabled]="buscandoProducto()"
+        aria-label="Buscar producto por nombre"
+      >
+        Buscar
+      </button>
+    </div>
+    <span id="scanner-hint" class="scan-hint">Presione Enter o use la pistola lectora · Use "Buscar" para buscar por nombre</span>
+    @if (buscandoProducto()) {
+      <p class="scan-estado" aria-live="polite">Consultando producto...</p>
+    }
+    @if (errorEscaneo()) {
+      <p class="scan-error" role="alert">{{ errorEscaneo() }}</p>
+    }
+    @if (infoEscaneo()) {
+      <p class="scan-info" role="status">{{ infoEscaneo() }}</p>
+    }
+  </section>
+
+  @if (detalles().length > 0) {
+    <div class="detalles-table-wrapper">
+      <table aria-label="Detalle de la compra">
+        <thead>
+          <tr>
+            <th scope="col">Nombre</th>
+            <th scope="col" class="col-number">Cantidad</th>
+            <th scope="col" class="col-number">Costo Unitario</th>
+            <th scope="col" class="col-number">Subtotal</th>
+            <th scope="col" class="col-action">Acción</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (det of detalles(); track det.uid) {
+            <tr>
+              <td>{{ det.nombreCompleto }}</td>
+              <td class="col-number">{{ det.cantidad | number:'1.0-2' }}</td>
+              <td class="col-number">{{ det.costoUnitario | number:'1.0-2' }}</td>
+              <td class="col-number">{{ det.cantidad * det.costoUnitario | number:'1.0-2' }}</td>
+              <td class="col-action">
+                <button
+                  type="button"
+                  class="btn-icon-danger"
+                  (click)="eliminarDetalle(det.uid)"
+                  [attr.aria-label]="'Eliminar ' + det.nombreCompleto"
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">
+                    <polyline points="3 6 5 6 21 6"></polyline>
+                    <path d="M19 6l-1 14H6L5 6"></path>
+                    <path d="M10 11v6"></path>
+                    <path d="M14 11v6"></path>
+                    <path d="M9 6V4h6v2"></path>
+                  </svg>
+                </button>
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+
+    <div class="detalles-total">
+      <span class="detalles-total-label">Total costo</span>
+      <span class="detalles-total-value">{{ totalCosto() | number:'1.0-2' }}</span>
+    </div>
+  }
+
+  @if (errorGuardar()) {
+    <div class="error" role="alert">{{ errorGuardar() }}</div>
+  }
+
+  <div class="form-actions">
+    <button class="btn-limpiar" type="button" [disabled]="guardando()" (click)="abrirConfirmarCancelar()">
+      Cancelar
+    </button>
+    <button class="btn-primary" type="button" [disabled]="guardando()" (click)="abrirConfirmarGuardar()">
+      @if (guardando()) { Guardando... } @else { Guardar }
+    </button>
+  </div>
+</div>
+
+<!-- Product search dialog -->
+@if (dialogBuscarAbierto()) {
+  <app-buscar-producto-dialog
+    (productoSeleccionado)="onProductoSeleccionadoDesdeDialog($event)"
+    (cerrado)="cerrarDialogBuscar()"
+  />
+}
+
+<!-- Modal: agregar producto al detalle -->
+@if (modalProductoAbierto()) {
+  <div
+    class="modal-backdrop"
+    role="presentation"
+    (click)="cerrarModalProducto()"
+  >
+    <div
+      class="modal-card modal-card--wide"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="modal-producto-titulo"
+      (click)="$event.stopPropagation()"
+      (keydown.escape)="cerrarModalProducto()"
+    >
+      <div class="modal-header">
+        <h2 id="modal-producto-titulo" class="modal-titulo">Agregar producto</h2>
+      </div>
+
+      <div class="modal-body">
+        <div class="dialog-info">
+          <div class="info-card">
+            <span class="info-label">Nombre</span>
+            <span class="info-value">{{ productoActual()?.nombreCompleto }}</span>
+          </div>
+          <div class="info-card">
+            <span class="info-label">Precio Venta</span>
+            <span class="info-value">{{ productoActual()?.precioVenta | number:'1.0-2' }}</span>
+          </div>
+        </div>
+
+        <form [formGroup]="detalleForm" class="detalle-form" novalidate>
+          <div class="field">
+            <label for="cantidad" class="field-label">
+              Cantidad <span class="required-mark" aria-hidden="true">*</span>
+            </label>
+            <input
+              #cantidadInput
+              id="cantidad"
+              type="number"
+              class="field-input"
+              formControlName="cantidad"
+              min="0.001"
+              step="any"
+              [attr.aria-invalid]="detalleForm.get('cantidad')?.invalid && detalleForm.get('cantidad')?.touched ? true : null"
+              aria-describedby="cantidad-error"
+              (keydown)="onCantidadKeydown($event)"
+            />
+            @if (detalleForm.get('cantidad')?.invalid && detalleForm.get('cantidad')?.touched) {
+              <span id="cantidad-error" class="field-error" role="alert">
+                La cantidad es obligatoria y debe ser mayor a 0
+              </span>
+            }
+          </div>
+
+          <div class="field">
+            <label for="costo-unitario" class="field-label">
+              Costo Unitario <span class="required-mark" aria-hidden="true">*</span>
+            </label>
+            <input
+              #costoUnitarioInput
+              id="costo-unitario"
+              type="text"
+              inputmode="numeric"
+              class="field-input"
+              [value]="costoUnitarioDisplay()"
+              (input)="actualizarCostoUnitario($event)"
+              (blur)="detalleForm.controls.costoUnitario.markAsTouched()"
+              (keydown)="onCostoUnitarioKeydown($event)"
+              [attr.aria-invalid]="detalleForm.get('costoUnitario')?.invalid && detalleForm.get('costoUnitario')?.touched ? true : null"
+              aria-describedby="costo-unitario-error"
+            />
+            @if (detalleForm.get('costoUnitario')?.invalid && detalleForm.get('costoUnitario')?.touched) {
+              <span id="costo-unitario-error" class="field-error" role="alert">
+                El costo unitario es obligatorio y debe ser mayor a 0
+              </span>
+            }
+          </div>
+        </form>
+      </div>
+
+      <div class="modal-actions">
+        <button class="btn-limpiar" type="button" tabindex="-1" (click)="cerrarModalProducto()">Cancelar</button>
+        <button #agregarBtn class="btn-primary" type="button" (click)="agregarDetalle()">Agregar</button>
+      </div>
+    </div>
+  </div>
+}
+
+<!-- Modal: confirmar guardar -->
+@if (modalGuardarAbierto()) {
+  <div
+    class="modal-backdrop"
+    role="presentation"
+    (click)="modalGuardarAbierto.set(false)"
+  >
+    <div
+      class="modal-card"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="modal-guardar-titulo"
+      (click)="$event.stopPropagation()"
+      (keydown.escape)="modalGuardarAbierto.set(false)"
+    >
+      <div class="modal-header">
+        <h2 id="modal-guardar-titulo" class="modal-titulo">Confirmar guardado</h2>
+      </div>
+      <div class="modal-body">
+        <p class="confirm-msg">
+          ¿Está seguro que desea guardar la compra con {{ detalles().length }} producto(s)?
+        </p>
+      </div>
+      <div class="modal-actions">
+        <button class="btn-limpiar" type="button" (click)="modalGuardarAbierto.set(false)">No, volver</button>
+        <button class="btn-primary" type="button" (click)="confirmarGuardar()">Sí, guardar</button>
+      </div>
+    </div>
+  </div>
+}
+
+<!-- Modal: confirmar cancelar -->
+@if (modalCancelarAbierto()) {
+  <div
+    class="modal-backdrop"
+    role="presentation"
+    (click)="modalCancelarAbierto.set(false)"
+  >
+    <div
+      class="modal-card"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="modal-cancelar-titulo"
+      (click)="$event.stopPropagation()"
+      (keydown.escape)="modalCancelarAbierto.set(false)"
+    >
+      <div class="modal-header">
+        <h2 id="modal-cancelar-titulo" class="modal-titulo">Confirmar cancelación</h2>
+      </div>
+      <div class="modal-body">
+        <p class="confirm-msg">
+          ¿Está seguro que desea cancelar? Se perderán todos los datos ingresados.
+        </p>
+      </div>
+      <div class="modal-actions">
+        <button class="btn-limpiar" type="button" (click)="modalCancelarAbierto.set(false)">No, volver</button>
+        <button class="btn-danger" type="button" (click)="confirmarCancelar()">Sí, cancelar</button>
+      </div>
+    </div>
+  </div>
+}

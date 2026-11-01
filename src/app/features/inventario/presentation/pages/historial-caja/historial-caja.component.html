@@ -1,0 +1,147 @@
+﻿<div class="page">
+  <div class="toolbar">
+    <h2>Historial Caja</h2>
+    <button class="btn-limpiar" type="button" (click)="limpiarFiltros()">
+      Limpiar filtros
+    </button>
+  </div>
+
+  @if (error()) {
+    <div class="error" role="alert">{{ error() }}</div>
+  }
+
+  <div class="table-wrapper">
+    <table aria-label="Historial de registros de caja">
+      <thead>
+        <tr>
+          <th scope="col">Id Caja</th>
+          <th scope="col" class="col-number">Monto Inicial</th>
+          <th scope="col" class="col-number">Total Egresos</th>
+          <th scope="col" class="col-number">Monto Cierre Real</th>
+          <th scope="col" class="col-number">Diferencia</th>
+          <th scope="col">Fecha Apertura</th>
+          <th scope="col">Fecha Cierre</th>
+          <th scope="col">Usuario</th>
+          <th scope="col">Estado</th>
+        </tr>
+        <tr class="filter-row">
+          <th></th>
+          <th></th>
+          <th></th>
+          <th></th>
+          <th></th>
+          <th>
+            <div class="date-range-filter">
+              <div class="date-input-group">
+                <label for="filtro-ap-desde" class="range-label">Desde</label>
+                <input
+                  type="date"
+                  id="filtro-ap-desde"
+                  [value]="filtroFechaAperturaDesde()"
+                  [max]="filtroFechaAperturaHasta() || hoy"
+                  (change)="actualizarFechaAperturaDesde($event)"
+                  aria-label="Fecha apertura desde"
+                />
+              </div>
+              <div class="date-input-group">
+                <label for="filtro-ap-hasta" class="range-label">Hasta</label>
+                <input
+                  type="date"
+                  id="filtro-ap-hasta"
+                  [value]="filtroFechaAperturaHasta()"
+                  [min]="filtroFechaAperturaDesde() || null"
+                  [max]="hoy"
+                  (change)="actualizarFechaAperturaHasta($event)"
+                  aria-label="Fecha apertura hasta"
+                />
+              </div>
+              @if (errorFechaApertura()) {
+                <span class="error-fecha" role="alert">{{ errorFechaApertura() }}</span>
+              }
+            </div>
+          </th>
+          <th></th>
+          <th>
+            <input
+              type="text"
+              inputmode="numeric"
+              [value]="filtroUsuarioId()"
+              (input)="actualizarFiltroUsuarioId($event)"
+              (keydown.enter)="aplicarFiltroUsuarioId()"
+              placeholder="#Id..."
+              aria-label="Filtrar por ID de usuario (Enter para aplicar)"
+            />
+          </th>
+          <th>
+            <select
+              [value]="filtroEstado()"
+              (change)="cambiarFiltroEstado($event)"
+              aria-label="Filtrar por estado"
+            >
+              <option value="">Todos</option>
+              <option value="ABIERTA">Abierta</option>
+              <option value="CERRADA">Cerrada</option>
+            </select>
+          </th>
+        </tr>
+      </thead>
+      <tbody>
+        @if (cargando()) {
+          <tr>
+            <td colspan="9" class="state-cell" aria-live="polite">Cargando...</td>
+          </tr>
+        } @else {
+          @for (item of cajas(); track item.id) {
+            <tr
+              class="row-clickable"
+              (click)="abrirDetalle(item)"
+              tabindex="0"
+              (keydown.enter)="abrirDetalle(item)"
+              (keydown.space)="$event.preventDefault(); abrirDetalle(item)"
+              [attr.aria-label]="'Ver detalle de caja #' + item.id"
+            >
+              <td>{{ item.id }}</td>
+              <td class="col-number">{{ item.montoInicial | number:'1.0-2' }}</td>
+              <td class="col-number">{{ item.totalEgresos | number:'1.0-2' }}</td>
+              <td class="col-number">
+                {{ item.montoCierreReal !== null ? (item.montoCierreReal | number:'1.0-2') : '-' }}
+              </td>
+              <td
+                class="col-number"
+                [class.diferencia--negativa]="item.diferencia !== null && item.diferencia < 0"
+                [class.diferencia--positiva]="item.diferencia !== null && item.diferencia > 0"
+              >
+                {{ item.diferencia !== null ? (item.diferencia | number:'1.0-2') : '-' }}
+              </td>
+              <td>{{ item.fechaApertura | date:'dd/MM/yyyy HH:mm' }}</td>
+              <td>{{ item.fechaCierre ? (item.fechaCierre | date:'dd/MM/yyyy HH:mm') : '-' }}</td>
+              <td>#{{ item.usuarioId }} {{ item.usuario }}</td>
+              <td>
+                <span
+                  class="estado-badge"
+                  [class.estado-badge--abierta]="item.estado === 'ABIERTA'"
+                  [class.estado-badge--cerrada]="item.estado === 'CERRADA'"
+                >
+                  {{ item.estado === 'ABIERTA' ? 'Abierta' : 'Cerrada' }}
+                </span>
+              </td>
+            </tr>
+          } @empty {
+            <tr>
+              <td colspan="9" class="state-cell">Sin registros para mostrar.</td>
+            </tr>
+          }
+        }
+      </tbody>
+    </table>
+  </div>
+
+  <app-pagination
+    [page]="page()"
+    [size]="size()"
+    [totalRows]="totalRows()"
+    [totalPages]="totalPages()"
+    (pageChange)="cambiarPagina($event)"
+    (sizeChange)="cambiarTamano($event)"
+  ></app-pagination>
+</div>

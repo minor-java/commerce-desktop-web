@@ -1,0 +1,76 @@
+@if (visible()) {
+  <section class="widget" aria-labelledby="areas-title">
+    <header class="widget-head">
+      <h2 id="areas-title" class="widget-title">Ventas por área</h2>
+      @if (!cargando() && !error()) {
+        <span class="widget-sub">{{ areas().length }} áreas · ordenadas por ventas del mes</span>
+      }
+    </header>
+
+    @if (cargando()) {
+      <div class="skeleton-list">
+        @for (_ of [1, 2, 3]; track $index) {
+          <div class="skeleton-row"></div>
+        }
+      </div>
+    } @else if (error()) {
+      <p class="widget-error" role="alert">{{ error() }}</p>
+    } @else {
+      <div class="tabla-wrap">
+        <table class="tabla">
+          <thead>
+            <tr>
+              <th scope="col">Área</th>
+              <th scope="col" class="num">Hoy</th>
+              <th scope="col" class="num">Reversos hoy</th>
+              <th scope="col" class="num">Mes</th>
+              <th scope="col" class="num" title="Ventas que incluyeron productos del área. Una venta con productos de varias áreas cuenta en cada una.">Ventas mes</th>
+              @if (mostrarImpuestos()) {
+                <th scope="col" class="num">Impuestos mes</th>
+              }
+              <th scope="col" class="col-part">Participación mes</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (f of filas(); track f.area.areaNegocioId) {
+              <tr>
+                <th scope="row" class="area">
+                  <span class="area-nombre" [title]="f.area.nombre">{{ f.area.nombre }}</span>
+                  @if (!f.area.activa) {
+                    <span class="badge">Inactiva</span>
+                  }
+                </th>
+                <td class="num">$&nbsp;{{ f.area.totalVendidoHoy | number:'1.0-0' }}</td>
+                <td class="num" [class.reverso]="f.area.totalReversosHoy > 0" [class.cero]="f.area.totalReversosHoy === 0">
+                  $&nbsp;{{ f.area.totalReversosHoy | number:'1.0-0' }}
+                </td>
+                <td class="num fuerte">$&nbsp;{{ f.area.totalVendidoMes | number:'1.0-0' }}</td>
+                <td class="num">{{ f.area.cantidadVentasMes | number:'1.0-0' }}</td>
+                @if (mostrarImpuestos()) {
+                  <td class="num">$&nbsp;{{ f.area.totalImpuestoMes | number:'1.0-0' }}</td>
+                }
+                <td class="col-part">
+                  <div
+                    class="part"
+                    [title]="f.area.nombre + ': $ ' + (f.area.totalVendidoMes | number:'1.0-0') + ' de $ ' + (totalMes() | number:'1.0-0') + ' del mes'"
+                  >
+                    <span class="part-track">
+                      <span class="part-bar" [style.width.%]="f.participacion * 100"></span>
+                    </span>
+                    <span class="part-pct">{{ f.participacion | percent:'1.0-0' }}</span>
+                  </div>
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+
+      @if (hayOcultas()) {
+        <button type="button" class="ver-mas" (click)="alternarExpandido()" [attr.aria-expanded]="expandido()">
+          {{ expandido() ? 'Ver menos' : 'Ver todas (' + areas().length + ')' }}
+        </button>
+      }
+    }
+  </section>
+}

@@ -1,0 +1,132 @@
+<div class="page">
+  <div class="toolbar">
+    <div>
+      <h1>Respaldos</h1>
+      <p class="toolbar-hint">Copias completas de la información del negocio. Guárdelas fuera de este equipo (USB, nube).</p>
+    </div>
+  </div>
+
+  <div class="acciones">
+    @if (puedeCrear()) {
+      <section class="accion-card" aria-labelledby="generar-titulo">
+        <h2 id="generar-titulo" class="accion-titulo">Generar respaldo</h2>
+        <p class="accion-texto">
+          Crea una copia de todos los datos y la descarga como archivo {{ extension }}.
+          @if (ultimo(); as u) {
+            <br /><span class="col-muted">Último respaldo: {{ u.fechaCreacion | date: 'dd/MM/yyyy HH:mm' }}</span>
+          } @else if (!cargando()) {
+            <br /><span class="col-muted">Aún no hay respaldos en este equipo.</span>
+          }
+        </p>
+        <button type="button" class="btn-primary" (click)="generar()" [disabled]="generando()">
+          {{ generando() ? 'Generando…' : 'Generar y descargar' }}
+        </button>
+      </section>
+    }
+
+    @if (puedeCargar()) {
+      <section class="accion-card accion-card--peligro" aria-labelledby="restaurar-titulo-card">
+        <h2 id="restaurar-titulo-card" class="accion-titulo">Restaurar desde archivo</h2>
+        <p class="accion-texto">
+          Reemplaza todos los datos actuales por los de un respaldo. Úselo solo ante una pérdida o daño de información.
+        </p>
+        <label class="btn-secondary btn-archivo" [class.btn-archivo--deshabilitado]="subiendo()">
+          {{ subiendo() ? 'Leyendo archivo…' : 'Seleccionar archivo ' + extension }}
+          <input
+            type="file"
+            class="sr-only"
+            [accept]="extension"
+            [disabled]="subiendo()"
+            (change)="archivoSeleccionado($event)"
+          />
+        </label>
+      </section>
+    }
+  </div>
+
+  @if (error()) {
+    <div class="error" role="alert">{{ error() }}</div>
+  }
+
+  <section aria-labelledby="historial-titulo">
+    <h2 id="historial-titulo" class="seccion-titulo">Respaldos guardados en este equipo</h2>
+    <div class="table-wrapper">
+      <table aria-labelledby="historial-titulo">
+        <thead>
+          <tr>
+            <th scope="col">Fecha</th>
+            <th scope="col">Generado por</th>
+            <th scope="col">Contenido</th>
+            <th scope="col" class="col-num">Tamaño</th>
+            <th scope="col" class="col-actions">Acciones</th>
+          </tr>
+        </thead>
+        <tbody>
+          @if (cargando()) {
+            <tr><td colspan="5" class="state-cell" aria-live="polite">Cargando…</td></tr>
+          } @else {
+            @for (r of respaldos(); track r.archivo) {
+              <tr>
+                <td class="col-name">{{ r.fechaCreacion | date: 'dd/MM/yyyy HH:mm' }}</td>
+                <td>{{ r.usuario }}</td>
+                <td class="col-muted">{{ resumenConteos(r) }}</td>
+                <td class="col-num">{{ tamano(r) }}</td>
+                <td class="col-actions">
+                  @if (puedeCrear()) {
+                    <button
+                      type="button"
+                      class="btn-icon"
+                      [disabled]="procesando() === r.archivo"
+                      (click)="descargar(r)"
+                      [attr.aria-label]="'Descargar respaldo del ' + (r.fechaCreacion | date: 'dd/MM/yyyy HH:mm')"
+                    >Descargar</button>
+                  }
+                  @if (puedeRestaurar()) {
+                    <button
+                      type="button"
+                      class="btn-icon btn-icon--danger"
+                      [disabled]="procesando() === r.archivo"
+                      (click)="restaurarDelHistorial(r)"
+                      [attr.aria-label]="'Restaurar respaldo del ' + (r.fechaCreacion | date: 'dd/MM/yyyy HH:mm')"
+                    >Restaurar</button>
+                  }
+                </td>
+              </tr>
+            } @empty {
+              <tr><td colspan="5" class="state-cell">No hay respaldos guardados en este equipo.</td></tr>
+            }
+          }
+        </tbody>
+      </table>
+    </div>
+    <p class="hint-msg nota">Se conservan los últimos respaldos generados; los más antiguos se eliminan automáticamente.</p>
+  </section>
+</div>
+
+@if (vistaPrevia(); as vista) {
+  <app-restaurar-respaldo-dialog
+    [vista]="vista"
+    [nombreOriginal]="nombreCargado()"
+    (restaurado)="onRestaurado()"
+    (cerrado)="cerrarRestauracion()"
+  />
+}
+
+@if (restauracionCompletada()) {
+  <div class="backdrop">
+    <div class="dialog dialog--narrow" role="alertdialog" aria-modal="true" aria-labelledby="completada-titulo" aria-describedby="completada-texto">
+      <div class="dialog-header">
+        <h2 id="completada-titulo" class="dialog-title">Restauración completada</h2>
+      </div>
+      <div class="dialog-body">
+        <p id="completada-texto" class="dialog-text">
+          Los datos se restauraron correctamente. Por seguridad se cerraron todas las sesiones:
+          inicie sesión de nuevo con un usuario del respaldo o con el super usuario.
+        </p>
+      </div>
+      <div class="dialog-footer">
+        <button type="button" class="btn-primary" (click)="irAlLogin()">Ir al inicio de sesión</button>
+      </div>
+    </div>
+  </div>
+}

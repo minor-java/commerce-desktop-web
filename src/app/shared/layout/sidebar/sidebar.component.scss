@@ -1,0 +1,19 @@
+:host {
+  display: block;
+  width: var(--sidebar-width);
+  background: var(--color-surface-alt);
+  overflow-y: auto;
+  overflow-x: hidden;
+  flex-shrink: 0;
+  transition: width 0.2s ease;
+
+  &.collapsed {
+    width: 0;
+    overflow: hidden;
+  }
+}
+
+aside {
+  width: var(--sidebar-width);
+  min-height: 100%;
+}

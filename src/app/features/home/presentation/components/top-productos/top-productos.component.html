@@ -1,0 +1,33 @@
+<section class="widget" aria-labelledby="top-title">
+  <h2 id="top-title" class="widget-title">Top 3 productos del mes</h2>
+
+  @if (cargando()) {
+    <div class="skeleton-list">
+      @for (_ of [1, 2, 3]; track $index) {
+        <div class="skeleton-row"></div>
+      }
+    </div>
+  } @else if (error()) {
+    <p class="widget-error" role="alert">{{ error() }}</p>
+  } @else if (productos().length === 0) {
+    <p class="widget-empty">Sin ventas registradas este mes</p>
+  } @else {
+    <ol class="top-list" aria-label="Productos más vendidos del mes">
+      @for (p of productos(); track $index; let i = $index) {
+        <li
+          class="top-item"
+          [class.top-item--1]="i === 0"
+          [class.top-item--2]="i === 1"
+          [class.top-item--3]="i === 2"
+        >
+          <span class="top-pos" [attr.aria-label]="'Posición ' + (i + 1)">#{{ i + 1 }}</span>
+          <div class="top-info">
+            <span class="top-nombre">{{ p.nombre }}</span>
+            <span class="top-cantidad">{{ p.cantidadVendida | number:'1.0-0' }} unidades</span>
+          </div>
+          <span class="top-total">$ {{ p.totalVendido | number:'1.0-0' }}</span>
+        </li>
+      }
+    </ol>
+  }
+</section>

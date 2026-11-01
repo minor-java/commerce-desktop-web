@@ -1,0 +1,12 @@
+@if (visible()) {
+  <div class="field">
+    <label [for]="inputId()">Impuesto</label>
+    <select [id]="inputId()" [formControl]="control()" [attr.aria-describedby]="inputId() + '-ayuda'">
+      <option [ngValue]="null">{{ textoHeredada() }}</option>
+      @for (t of impuestos()!.tarifas; track t.id) {
+        <option [ngValue]="t.id">{{ t.nombre }}</option>
+      }
+    </select>
+    <span [id]="inputId() + '-ayuda'" class="hint">El precio de venta ya incluye el impuesto.</span>
+  </div>
+}

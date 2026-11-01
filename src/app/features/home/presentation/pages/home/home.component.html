@@ -1,0 +1,60 @@
+<div class="dashboard">
+
+  <div class="dash-header">
+    <div>
+      <h1 class="dash-title">Bienvenido, {{ auth.session()?.usuario }}</h1>
+      <p class="dash-fecha">{{ fechaHoy }}</p>
+    </div>
+  </div>
+
+  <section class="kpis-row" aria-label="Indicadores clave">
+    <app-kpi-card
+      titulo="Total vendido (mes)"
+      [valor]="totalVendidoMes()"
+      tipo="money"
+      color="blue"
+      [cargando]="totalVendidoMesCargando()"
+    />
+    <app-kpi-card
+      titulo="Ventas del mes"
+      [valor]="cantidadVentasMes()"
+      tipo="count"
+      color="green"
+      [cargando]="cantidadVentasMesCargando()"
+    />
+    <app-kpi-card
+      titulo="Total vendido (hoy)"
+      [valor]="totalVendidoHoy()"
+      tipo="money"
+      color="indigo"
+      [cargando]="totalVendidoHoyCargando()"
+    />
+    <app-kpi-card
+      titulo="Reversos de hoy"
+      [valor]="totalReversosHoy()"
+      tipo="money"
+      color="rose"
+      [cargando]="totalReversosHoyCargando()"
+    />
+  </section>
+
+  <app-ventas-por-area
+    [areas]="resumenAreas()"
+    [cargando]="resumenAreasCargando()"
+    [error]="resumenAreasError()"
+  />
+
+  <div class="mid-row">
+    <app-top-productos
+      [productos]="topProductos()"
+      [cargando]="topCargando()"
+      [error]="topError()"
+    />
+    <app-ultimas-ventas
+      [ventas]="ultimasVentas()"
+      [cargando]="ventasCargando()"
+      [error]="ventasError()"
+    />
+  </div>
+
+</div>

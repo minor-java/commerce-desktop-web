@@ -1,0 +1,48 @@
+<figure class="preview" [class.preview--actualizando]="actualizando()">
+  <div
+    class="papel"
+    [style.--ancho]="ancho()"
+    role="img"
+    aria-label="Vista previa del recibo impreso con una venta de ejemplo"
+  >
+    @for (l of vista(); track $index) {
+      @switch (l.tipo) {
+        @case ('texto') {
+          @if (l.grande) {
+            <div class="linea linea--grande" [style.text-align]="l.alineacion" [class.negrita]="l.negrita">{{ l.texto }}</div>
+          } @else {
+            <div class="linea" [style.text-align]="l.alineacion" [class.negrita]="l.negrita" [class.linea--alta]="l.alto">{{ l.texto || ' ' }}</div>
+          }
+        }
+        @case ('avance') {
+          <div class="avance" [style.--lineas]="l.lineas"></div>
+        }
+        @case ('logo') {
+          @if (logoProcesado(); as src) {
+            <img class="logo" [src]="src" [style.width.ch]="logoAnchoCh()" alt="" />
+          }
+        }
+        @case ('qr') {
+          <svg class="qr" [style.width.ch]="l.anchoCh" viewBox="0 0 25 25" aria-hidden="true">
+            <path [attr.d]="l.path" />
+          </svg>
+        }
+        @case ('barcode') {
+          <div class="barcode">
+            <svg viewBox="0 0 200 30" preserveAspectRatio="none" aria-hidden="true"><path [attr.d]="l.path" /></svg>
+            <span>{{ l.texto }}</span>
+          </div>
+        }
+        @case ('corte') {
+          <div class="marca marca--corte"><span>✂ corte de papel</span></div>
+        }
+        @case ('cajon') {
+          <div class="marca"><span>Abre el cajón monedero</span></div>
+        }
+      }
+    }
+  </div>
+  <figcaption class="nota">
+    Vista aproximada con una venta de ejemplo. El código de la venta es ilustrativo; el impreso contiene el número real de la venta.
+  </figcaption>
+</figure>

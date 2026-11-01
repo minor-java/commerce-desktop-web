@@ -1,0 +1,127 @@
+﻿<div class="page">
+  @if (cargando()) {
+    <div class="loading" role="status" aria-live="polite">
+      <span class="spinner" aria-hidden="true"></span>
+      Consultando caja...
+    </div>
+  } @else {
+    @if (cajaActiva(); as caja) {
+      <header class="section-header">
+        <h2>Caja Activa</h2>
+        <span class="badge badge--abierta" aria-label="Estado: Abierta">Abierta</span>
+      </header>
+
+      <dl class="info-card" aria-label="Información de la caja activa">
+        <div class="info-row">
+          <dt>Fecha apertura</dt>
+          <dd>{{ caja.fechaApertura | date:'dd/MM/yyyy HH:mm' }}</dd>
+        </div>
+        <div class="info-row">
+          <dt>Monto inicial</dt>
+          <dd>$ {{ caja.montoInicial | number:'1.0-2' }}</dd>
+        </div>
+        @if (puedeVerTotales() && valorEsperado() !== null) {
+          <div class="info-row">
+            <dt>Ingresos efectivo</dt>
+            <dd>$ {{ caja.totalIngresos | number:'1.0-2' }}</dd>
+          </div>
+          <div class="info-row">
+            <dt>Ingresos transferencia</dt>
+            <dd>$ {{ caja.totalIngresosTransferencia | number:'1.0-2' }}</dd>
+          </div>
+          <div class="info-row">
+            <dt>Total egresos</dt>
+            <dd>$ {{ caja.totalEgresos | number:'1.0-2' }}</dd>
+          </div>
+          <div class="info-row info-row--highlight">
+            <dt>Valor esperado en caja</dt>
+            <dd>$ {{ valorEsperado() | number:'1.0-2' }}</dd>
+          </div>
+        }
+      </dl>
+
+      <section aria-labelledby="cerrar-heading">
+        <h3 id="cerrar-heading">Cerrar Caja</h3>
+        <p class="section-hint">
+          Ingrese el monto total que tiene actualmente en la caja para proceder al cierre.
+          @if (!puedeVerTotales()) { Cuente el dinero antes de ingresarlo: el cierre no se puede deshacer. }
+        </p>
+
+        <form [formGroup]="cerrarForm" (ngSubmit)="cerrar()" novalidate>
+          <div
+            class="field"
+            [class.field--error]="cerrarForm.controls.montoCierreReal.invalid && cerrarForm.controls.montoCierreReal.touched"
+          >
+            <label for="montoCierreReal">
+              Monto de cierre real <span class="required" aria-hidden="true">*</span>
+            </label>
+            <input
+              #montoCierreInput
+              id="montoCierreReal"
+              type="text"
+              inputmode="numeric"
+              [value]="montoCierreDisplay()"
+              (input)="actualizarMontoCierre($event)"
+              (blur)="cerrarForm.controls.montoCierreReal.markAsTouched()"
+              placeholder="Ej. 150.000"
+              autocomplete="off"
+              aria-required="true"
+              [attr.aria-invalid]="cerrarForm.controls.montoCierreReal.invalid && cerrarForm.controls.montoCierreReal.touched"
+              aria-describedby="montoCierreReal-error"
+            />
+            @if (cerrarForm.controls.montoCierreReal.invalid && cerrarForm.controls.montoCierreReal.touched) {
+              <span id="montoCierreReal-error" class="error-msg" role="alert">
+                El monto de cierre es obligatorio
+              </span>
+            }
+          </div>
+
+          <div class="form-actions">
+            <button type="submit" class="btn-danger" [disabled]="cerrando()">
+              @if (cerrando()) { Cerrando... } @else { Cerrar Caja }
+            </button>
+          </div>
+        </form>
+      </section>
+    } @else {
+      <h2>Abrir Caja</h2>
+      <p class="section-hint">No hay caja activa. Ingrese el monto inicial para abrir una nueva caja.</p>
+
+      <form [formGroup]="abrirForm" (ngSubmit)="abrir()" novalidate>
+        <div
+          class="field"
+          [class.field--error]="abrirForm.controls.montoInicial.invalid && abrirForm.controls.montoInicial.touched"
+        >
+          <label for="montoInicial">
+            Monto inicial <span class="required" aria-hidden="true">*</span>
+          </label>
+          <input
+            #montoInicialInput
+            id="montoInicial"
+            type="text"
+            inputmode="numeric"
+            [value]="montoInicialDisplay()"
+            (input)="actualizarMontoInicial($event)"
+            (blur)="abrirForm.controls.montoInicial.markAsTouched()"
+            placeholder="Ej. 150.000"
+            autocomplete="off"
+            aria-required="true"
+            [attr.aria-invalid]="abrirForm.controls.montoInicial.invalid && abrirForm.controls.montoInicial.touched"
+            aria-describedby="montoInicial-error"
+          />
+          @if (abrirForm.controls.montoInicial.invalid && abrirForm.controls.montoInicial.touched) {
+            <span id="montoInicial-error" class="error-msg" role="alert">
+              El monto inicial es obligatorio y debe ser mayor a 0
+            </span>
+          }
+        </div>
+
+        <div class="form-actions">
+          <button type="submit" class="btn-primary" [disabled]="abriendo()">
+            @if (abriendo()) { Abriendo... } @else { Abrir Caja }
+          </button>
+        </div>
+      </form>
+    }
+  }
+</div>

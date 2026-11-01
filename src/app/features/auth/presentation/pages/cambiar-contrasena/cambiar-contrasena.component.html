@@ -1,0 +1,103 @@
+<main class="login-page" role="main">
+  <div class="login-form-area">
+    <div class="login-card">
+      <div class="login-card__gold-bar" aria-hidden="true"></div>
+
+      <div class="login-card__body">
+        <header class="login-card__header">
+          <h1 class="login-card__title">Cambiar contraseña</h1>
+          @if (obligatorio()) {
+            <p class="login-card__sub">
+              Por seguridad, <strong>{{ usuario() }}</strong> debe definir una contraseña nueva antes de continuar.
+            </p>
+          } @else {
+            <p class="login-card__sub">Usuario: <strong>{{ usuario() }}</strong></p>
+          }
+        </header>
+
+        <form
+          class="login-form"
+          [formGroup]="form"
+          (ngSubmit)="submit()"
+          novalidate
+          aria-label="Formulario de cambio de contraseña"
+        >
+          <div class="field">
+            <label class="field__label" for="actual">Contraseña actual</label>
+            <input
+              id="actual"
+              class="field__input"
+              [type]="showPassword() ? 'text' : 'password'"
+              formControlName="actual"
+              autocomplete="current-password"
+              [attr.aria-invalid]="mostrarError('actual') ? 'true' : null"
+              [attr.aria-describedby]="mostrarError('actual') ? 'actual-error' : null"
+            />
+            @if (mostrarError('actual')) {
+              <span id="actual-error" class="field__error">Ingrese su contraseña actual</span>
+            }
+          </div>
+
+          <div class="field">
+            <label class="field__label" for="nueva">Contraseña nueva</label>
+            <input
+              id="nueva"
+              class="field__input"
+              [type]="showPassword() ? 'text' : 'password'"
+              formControlName="nueva"
+              autocomplete="new-password"
+              aria-describedby="nueva-ayuda"
+              [attr.aria-invalid]="mostrarError('nueva') ? 'true' : null"
+            />
+            <span id="nueva-ayuda" class="field__hint" [class.field__hint--error]="mostrarError('nueva')">
+              Mínimo 6 caracteres, con letras y números.
+            </span>
+          </div>
+
+          <div class="field">
+            <label class="field__label" for="confirmar">Confirmar contraseña nueva</label>
+            <input
+              id="confirmar"
+              class="field__input"
+              [type]="showPassword() ? 'text' : 'password'"
+              formControlName="confirmar"
+              autocomplete="new-password"
+              [attr.aria-invalid]="form.hasError('noCoinciden') && form.controls.confirmar.touched ? 'true' : null"
+              [attr.aria-describedby]="form.hasError('noCoinciden') && form.controls.confirmar.touched ? 'confirmar-error' : null"
+            />
+            @if (form.hasError('noCoinciden') && form.controls.confirmar.touched) {
+              <span id="confirmar-error" class="field__error">Las contraseñas no coinciden</span>
+            }
+          </div>
+
+          <label class="show-pass">
+            <input type="checkbox" [checked]="showPassword()" (change)="togglePassword()" />
+            Mostrar contraseñas
+          </label>
+
+          @if (error()) {
+            <p class="login-error" role="alert" aria-live="polite">{{ error() }}</p>
+          }
+
+          <button
+            type="submit"
+            class="login-submit"
+            [disabled]="loading()"
+            [class.login-submit--loading]="loading()"
+          >
+            @if (loading()) {
+              <span class="spinner" aria-hidden="true"></span>
+              Guardando...
+            } @else {
+              Guardar contraseña
+            }
+          </button>
+
+          <button type="button" class="btn-link" (click)="cancelar()">
+            {{ obligatorio() ? 'Cerrar sesión' : 'Cancelar' }}
+          </button>
+        </form>
+      </div>
+    </div>
+  </div>
+</main>

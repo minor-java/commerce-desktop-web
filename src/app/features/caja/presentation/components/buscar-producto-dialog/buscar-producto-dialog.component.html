@@ -1,0 +1,145 @@
+<div
+  class="dialog-backdrop"
+  role="presentation"
+  (click)="onCancelar()"
+>
+  <div
+    class="dialog-card"
+    role="dialog"
+    aria-modal="true"
+    aria-labelledby="dialog-buscar-title"
+    (click)="$event.stopPropagation()"
+    (keydown.escape)="onCancelar()"
+  >
+
+    <!-- Header -->
+    <div class="dialog-header">
+      <h2 id="dialog-buscar-title" class="dialog-title">Buscar producto</h2>
+      <div class="dialog-header-actions">
+        <button class="btn-outline" type="button" (click)="limpiarFiltros()">Limpiar filtros</button>
+        <button class="btn-cancel" type="button" (click)="onCancelar()">Cancelar</button>
+      </div>
+    </div>
+
+    <!-- Body -->
+    <div class="dialog-body">
+
+      @if (error() && !cargando()) {
+        <p class="dialog-empty" role="alert">{{ error() }}</p>
+
+      } @else if (resultado() === null) {
+        <div class="dialog-loading" aria-live="polite">
+          <span class="loading-spinner" aria-hidden="true"></span>
+          <span>Cargando...</span>
+        </div>
+
+      } @else if (resultado()!.contenido.length === 0 && !cargando()) {
+        <p class="dialog-empty" role="status">No se encontraron productos con los filtros aplicados.</p>
+
+      } @else {
+        <div class="table-wrapper" [class.table-refreshing]="cargando()" aria-busy="cargando()">
+          <table class="dialog-table" aria-label="Resultados de búsqueda de productos">
+            <thead>
+              <tr>
+                <th scope="col">Nombre</th>
+                <th scope="col">Contenido</th>
+                <th scope="col">Unidad</th>
+                <th scope="col">Estado</th>
+                <th scope="col" class="col-num">Stock</th>
+              </tr>
+              <tr class="filter-row">
+                <th scope="col">
+                  <input
+                    type="text"
+                    class="filtro-input"
+                    placeholder="Filtrar por nombre"
+                    [value]="filtroNombre()"
+                    (input)="onFiltroNombre($event)"
+                    aria-label="Filtrar por nombre"
+                    autocomplete="off"
+                  />
+                </th>
+                <th scope="col">
+                  <input
+                    type="number"
+                    class="filtro-input"
+                    placeholder="Filtrar"
+                    [value]="filtroContenido()"
+                    (input)="onFiltroContenido($event)"
+                    aria-label="Filtrar por contenido"
+                    autocomplete="off"
+                    min="0"
+                  />
+                </th>
+                <th scope="col">
+                  <input
+                    type="text"
+                    class="filtro-input"
+                    placeholder="Filtrar"
+                    [value]="filtroUnidad()"
+                    (input)="onFiltroUnidad($event)"
+                    aria-label="Filtrar por unidad"
+                    autocomplete="off"
+                  />
+                </th>
+                <th scope="col"></th>
+                <th scope="col"></th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (item of resultado()!.contenido; track item.id) {
+                <tr
+                  class="product-row"
+                  [class.product-row--inactive]="!item.activo"
+                  [class.product-row--no-stock]="(item.stock ?? 0) <= 0"
+                  (click)="seleccionar(item)"
+                  (keydown.enter)="seleccionar(item)"
+                  (keydown.space)="$event.preventDefault(); seleccionar(item)"
+                  tabindex="0"
+                  role="button"
+                  [attr.aria-label]="'Seleccionar ' + item.nombre"
+                  [attr.aria-disabled]="!item.activo || (item.stock ?? 0) <= 0"
+                >
+                  <td class="col-name">{{ item.nombre }}</td>
+                  <td>{{ item.presentacionValor ?? '—' }}</td>
+                  <td>{{ item.presentacionUnidad ?? '—' }}</td>
+                  <td>
+                    <span
+                      class="badge"
+                      [class.badge--active]="item.activo"
+                      [class.badge--inactive]="!item.activo"
+                    >{{ item.activo ? 'Activo' : 'Inactivo' }}</span>
+                  </td>
+                  <td class="col-num">{{ (item.stock ?? 0) | number:'1.0-2' }}</td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+
+        @if ((resultado()?.totalPages ?? 0) > 1) {
+          <div class="paginacion" aria-label="Navegación de páginas">
+            <button
+              class="btn-pag"
+              type="button"
+              (click)="paginaAnterior()"
+              [disabled]="paginaActual() === 0"
+              aria-label="Página anterior"
+            >← Anterior</button>
+            <span class="pag-info" aria-live="polite" aria-atomic="true">
+              Página {{ paginaActual() + 1 }} de {{ resultado()?.totalPages }}
+            </span>
+            <button
+              class="btn-pag"
+              type="button"
+              (click)="paginaSiguiente()"
+              [disabled]="paginaActual() >= (resultado()?.totalPages ?? 1) - 1"
+              aria-label="Página siguiente"
+            >Siguiente →</button>
+          </div>
+        }
+      }
+
+    </div>
+  </div>
+</div>

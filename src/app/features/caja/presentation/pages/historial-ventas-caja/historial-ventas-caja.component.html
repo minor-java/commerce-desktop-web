@@ -1,0 +1,140 @@
+﻿<div class="page">
+
+  @if (verificandoCaja()) {
+    <div class="estado-caja" aria-live="polite">Verificando caja activa...</div>
+  } @else if (!caja()) {
+    <div class="sin-caja" role="alert">
+      <p class="sin-caja__titulo">No hay una caja activa</p>
+      <p class="sin-caja__desc">Para ver el historial de ventas, debes abrir una caja primero.</p>
+      <a routerLink="/caja/caja" class="btn-ir-caja">Ir a Caja</a>
+    </div>
+  } @else {
+    <div class="toolbar">
+      <h2>Historial de Ventas</h2>
+      <button class="btn-limpiar" type="button" (click)="limpiarFiltros()">
+        Limpiar filtros
+      </button>
+    </div>
+
+    @if (error()) {
+      <div class="error" role="alert">{{ error() }}</div>
+    }
+
+    <div class="table-wrapper">
+      <table aria-label="Historial de ventas de la caja activa">
+        <thead>
+          <tr>
+            <th scope="col">Id</th>
+            <th scope="col">Fecha venta</th>
+            <th scope="col">Total venta</th>
+            <th scope="col" class="col-print"><span class="sr-only">Imprimir</span></th>
+          </tr>
+          <tr class="filter-row">
+            <th>
+              <input
+                type="text"
+                inputmode="numeric"
+                [value]="filtroId()"
+                (input)="actualizarFiltroId($event)"
+                (keydown.enter)="aplicarFiltros()"
+                placeholder="ID..."
+                aria-label="Filtrar por ID"
+              />
+            </th>
+            <th>
+              <div class="date-range-filter">
+                <label for="fecha-desde" class="filter-label">Desde</label>
+                <input
+                  id="fecha-desde"
+                  type="date"
+                  [value]="filtroFechaDesde()"
+                  [attr.max]="filtroFechaHasta() || null"
+                  (change)="actualizarFechaDesde($event)"
+                  aria-label="Fecha desde"
+                />
+                <label for="fecha-hasta" class="filter-label">Hasta</label>
+                <input
+                  id="fecha-hasta"
+                  type="date"
+                  [value]="filtroFechaHasta()"
+                  [attr.min]="filtroFechaDesde() || null"
+                  (change)="actualizarFechaHasta($event)"
+                  aria-label="Fecha hasta"
+                />
+                @if (errorFecha()) {
+                  <span class="filter-error" role="alert">{{ errorFecha() }}</span>
+                }
+              </div>
+            </th>
+            <th>
+              <input
+                type="text"
+                inputmode="decimal"
+                [value]="filtroTotal()"
+                (input)="actualizarFiltroTotal($event)"
+                (keydown.enter)="aplicarFiltros()"
+                placeholder="Total exacto..."
+                aria-label="Filtrar por total"
+              />
+            </th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          @if (cargando()) {
+            <tr>
+              <td colspan="4" class="state-cell" aria-live="polite">Cargando...</td>
+            </tr>
+          } @else {
+            @for (item of ventas(); track item.id) {
+              <tr
+                (click)="verDetalle(item)"
+                (keydown.enter)="verDetalle(item)"
+                tabindex="0"
+                [attr.aria-label]="'Ver detalle de venta #' + item.id"
+              >
+                <td>{{ item.id }}</td>
+                <td>{{ formatearFecha(item.fechaCreacion) }}</td>
+                <td>{{ item.total | number:'1.0-2' }}</td>
+                <td class="col-print">
+                  <button
+                    class="btn-print"
+                    type="button"
+                    [disabled]="imprimiendoId() !== null"
+                    (click)="imprimirTicket($event, item.id)"
+                    [attr.aria-label]="'Imprimir ticket de venta #' + item.id"
+                    title="Imprimir ticket"
+                  >
+                    @if (imprimiendoId() === item.id) {
+                      <span class="btn-spinner-sm" aria-hidden="true"></span>
+                    } @else {
+                      <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                        <polyline points="6 9 6 2 18 2 18 9"/>
+                        <path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/>
+                        <rect x="6" y="14" width="12" height="8"/>
+                      </svg>
+                    }
+                  </button>
+                </td>
+              </tr>
+            } @empty {
+              <tr>
+                <td colspan="4" class="state-cell">Sin ventas para mostrar.</td>
+              </tr>
+            }
+          }
+        </tbody>
+      </table>
+    </div>
+
+    <app-pagination
+      [page]="page()"
+      [size]="size()"
+      [totalRows]="totalRows()"
+      [totalPages]="totalPages()"
+      (pageChange)="cambiarPagina($event)"
+      (sizeChange)="cambiarTamano($event)"
+    ></app-pagination>
+  }
+
+</div>

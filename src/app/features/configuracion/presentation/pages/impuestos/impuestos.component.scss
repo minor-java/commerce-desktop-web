@@ -1,0 +1,28 @@
+@use '../../styles/configuracion';
+@use '../../styles/formulario-config';
+
+// Diálogo de tarifa: ancho suficiente para Impuesto | Clasificación | Porcentaje en una fila.
+.dialog--tarifa { max-width: 640px; }
+
+.tarifa-fila {
+  display: grid;
+  grid-template-columns: minmax(110px, 0.8fr) minmax(150px, 1.2fr) minmax(120px, 0.9fr);
+  gap: 1rem;
+
+  @media (max-width: 600px) { grid-template-columns: 1fr; }
+}
+
+.tarifa-ayudas {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  margin: -0.25rem 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.badge--defecto {
+  margin-left: 0.5rem;
+  background: color-mix(in srgb, var(--color-accent) 14%, transparent);
+  color: var(--color-text);
+}

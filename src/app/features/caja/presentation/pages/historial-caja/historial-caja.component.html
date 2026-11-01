@@ -1,0 +1,159 @@
+﻿<div class="page">
+  <div class="toolbar">
+    <h2>Historial de Caja</h2>
+    <button class="btn-limpiar" type="button" (click)="limpiarFiltros()">
+      Limpiar filtros
+    </button>
+  </div>
+
+  @if (error()) {
+    <div class="error" role="alert">{{ error() }}</div>
+  }
+
+  <div class="table-wrapper">
+    <table aria-label="Historial de caja">
+      <thead>
+        <tr>
+          <th scope="col">Monto ingresos</th>
+          <th scope="col">Estado</th>
+          <th scope="col">Diferencia</th>
+          <th scope="col">Usuario</th>
+          <th scope="col">Fecha apertura</th>
+          <th scope="col">Fecha cierre</th>
+        </tr>
+        <tr class="filter-row">
+          <th></th>
+          <th>
+            <select
+              [value]="filtroEstado()"
+              (change)="cambiarFiltroEstado($event)"
+              aria-label="Filtrar por estado"
+            >
+              <option value="">Todos</option>
+              <option value="ABIERTA">Abierta</option>
+              <option value="CERRADA">Cerrada</option>
+            </select>
+          </th>
+          <th>
+            <select
+              [value]="filtroConDiferencia()"
+              (change)="cambiarFiltroConDiferencia($event)"
+              aria-label="Filtrar por diferencia"
+            >
+              <option value="">Todos</option>
+              <option value="true">Con diferencia</option>
+              <option value="false">Sin diferencia</option>
+            </select>
+          </th>
+          <th>
+            <input
+              type="text"
+              inputmode="numeric"
+              [value]="filtroUsuarioId()"
+              (input)="actualizarFiltroUsuarioId($event)"
+              (keydown.enter)="aplicarFiltros()"
+              placeholder="ID usuario..."
+              aria-label="Filtrar por ID de usuario"
+            />
+          </th>
+          <th>
+            <div class="date-range-filter">
+              <label for="apertura-desde" class="filter-date-label">Desde</label>
+              <input
+                id="apertura-desde"
+                type="date"
+                [value]="filtroFechaAperturaDesde()"
+                [attr.max]="filtroFechaAperturaHasta() || null"
+                (change)="actualizarFechaAperturaDesde($event)"
+              />
+              <label for="apertura-hasta" class="filter-date-label">Hasta</label>
+              <input
+                id="apertura-hasta"
+                type="date"
+                [value]="filtroFechaAperturaHasta()"
+                [attr.min]="filtroFechaAperturaDesde() || null"
+                (change)="actualizarFechaAperturaHasta($event)"
+              />
+              @if (errorFechaApertura()) {
+                <span class="filter-date-error" role="alert">{{ errorFechaApertura() }}</span>
+              }
+            </div>
+          </th>
+          <th>
+            <div class="date-range-filter">
+              <label for="cierre-desde" class="filter-date-label">Desde</label>
+              <input
+                id="cierre-desde"
+                type="date"
+                [value]="filtroFechaCierreDesde()"
+                [attr.max]="filtroFechaCierreHasta() || null"
+                (change)="actualizarFechaCierreDesde($event)"
+              />
+              <label for="cierre-hasta" class="filter-date-label">Hasta</label>
+              <input
+                id="cierre-hasta"
+                type="date"
+                [value]="filtroFechaCierreHasta()"
+                [attr.min]="filtroFechaCierreDesde() || null"
+                (change)="actualizarFechaCierreHasta($event)"
+              />
+              @if (errorFechaCierre()) {
+                <span class="filter-date-error" role="alert">{{ errorFechaCierre() }}</span>
+              }
+            </div>
+          </th>
+        </tr>
+      </thead>
+      <tbody>
+        @if (cargando()) {
+          <tr>
+            <td colspan="6" class="state-cell" aria-live="polite">Cargando...</td>
+          </tr>
+        } @else {
+          @for (item of cajas(); track item.id) {
+            <tr
+              (click)="abrirDetalle(item)"
+              (keydown.enter)="abrirDetalle(item)"
+              tabindex="0"
+              [attr.aria-label]="'Ver detalle de caja, usuario ' + item.usuario"
+            >
+              <td>{{ item.totalIngresos | number:'1.0-2' }}</td>
+              <td>
+                <span
+                  class="badge"
+                  [class.badge--abierta]="item.estado === 'ABIERTA'"
+                  [class.badge--cerrada]="item.estado === 'CERRADA'"
+                >
+                  {{ item.estado === 'ABIERTA' ? 'Abierta' : 'Cerrada' }}
+                </span>
+              </td>
+              <td>
+                @if (item.conDiferencia) {
+                  <span class="badge badge--con-diferencia">{{ item.diferencia | number:'1.0-2' }}</span>
+                } @else {
+                  <span class="badge badge--sin-diferencia">Sin diferencia</span>
+                }
+              </td>
+              <td>{{ descripcionUsuario(item) }}</td>
+              <td>{{ formatearFecha(item.fechaApertura) }}</td>
+              <td>{{ formatearFecha(item.fechaCierre) }}</td>
+            </tr>
+          } @empty {
+            <tr>
+              <td colspan="6" class="state-cell">Sin registros para mostrar.</td>
+            </tr>
+          }
+        }
+      </tbody>
+    </table>
+  </div>
+
+  <app-pagination
+    [page]="page()"
+    [size]="size()"
+    [totalRows]="totalRows()"
+    [totalPages]="totalPages()"
+    (pageChange)="cambiarPagina($event)"
+    (sizeChange)="cambiarTamano($event)"
+  ></app-pagination>
+</div>

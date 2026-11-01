@@ -1,0 +1,100 @@
+.codigos-list {
+  margin: 0;
+  border: 1px solid var(--color-border);
+  border-radius: 6px;
+  background: var(--color-surface-alt);
+  overflow: hidden;
+}
+
+.codigo-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.625rem 0.875rem;
+  font-size: 0.875rem;
+  color: var(--color-text);
+  border-bottom: 1px solid var(--color-border);
+  list-style: none;
+
+  &:last-child { border-bottom: none; }
+}
+
+.codigo-texto {
+  font-family: ui-monospace, 'Cascadia Code', 'Source Code Pro', monospace;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.codigo-acciones {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-shrink: 0;
+}
+
+.cantidad-input {
+  width: 3.5rem;
+  padding: 0.3rem 0.5rem;
+  border: 1px solid var(--color-border);
+  border-radius: 5px;
+  font-size: 0.8125rem;
+  font-family: inherit;
+  background: var(--color-surface-alt);
+  color: var(--color-text);
+  text-align: center;
+
+  &:focus {
+    outline: none;
+    border-color: var(--color-accent);
+    box-shadow: 0 0 0 2px color-mix(in srgb, var(--color-accent) 20%, transparent);
+  }
+}
+
+.btn-print {
+  padding: 0.3rem 0.875rem;
+  background: var(--color-accent);
+  color: var(--color-on-accent);
+  border: none;
+  border-radius: 6px;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  font-family: inherit;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background 0.15s, opacity 0.15s;
+
+  &:hover:not(:disabled) { background: var(--color-accent-hover); }
+  &:disabled { opacity: 0.6; cursor: not-allowed; }
+
+  &:focus-visible {
+    outline: 2px solid var(--color-accent);
+    outline-offset: 1px;
+  }
+}
+
+.btn-remove {
+  background: none;
+  border: none;
+  color: var(--color-text-muted);
+  font-size: 1.125rem;
+  line-height: 1;
+  padding: 0 0.25rem;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: color 0.1s;
+
+  &:hover { color: var(--color-error); }
+
+  &:focus-visible {
+    outline: 2px solid var(--color-accent);
+    border-radius: 2px;
+  }
+}
+
+.codigos-empty {
+  margin: 0;
+  font-size: 0.9375rem;
+  color: var(--color-text-muted);
+}

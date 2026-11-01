@@ -1,0 +1,174 @@
+<div class="page">
+  <div class="toolbar">
+    <div>
+      <h1>Áreas de negocio</h1>
+      <p class="toolbar-hint">
+        Cada producto pertenece a un área. Si solo hay un área activa, se selecciona sola al crear productos.
+      </p>
+    </div>
+    <button type="button" class="btn-primary" (click)="nueva()" [disabled]="cargando()">Nueva área</button>
+  </div>
+
+  @if (error()) {
+    <div class="error" role="alert">{{ error() }}</div>
+  }
+
+  <div class="table-wrapper">
+    <table aria-label="Listado de áreas de negocio">
+      <thead>
+        <tr>
+          <th scope="col">Área</th>
+          @if (impuestos()?.responsableIva) {
+            <th scope="col">Impuesto</th>
+          }
+          <th scope="col">Estado</th>
+          <th scope="col" class="col-num">Productos</th>
+          <th scope="col" class="col-actions">Acciones</th>
+        </tr>
+      </thead>
+      <tbody>
+        @if (cargando()) {
+          <tr><td [attr.colspan]="impuestos()?.responsableIva ? 5 : 4" class="state-cell" aria-live="polite">Cargando…</td></tr>
+        } @else {
+          @for (area of areas(); track area.id) {
+            <tr>
+              <td class="col-name">{{ area.nombre }}</td>
+              @if (impuestos()?.responsableIva) {
+                <td class="col-muted">{{ tarifaTexto(area) }}</td>
+              }
+              <td>
+                <span class="badge" [class.badge--activo]="area.activo" [class.badge--inactivo]="!area.activo">
+                  {{ area.activo ? 'Activa' : 'Inactiva' }}
+                </span>
+              </td>
+              <td class="col-num">{{ area.cantidadProductos }}</td>
+              <td class="col-actions">
+                <button
+                  type="button"
+                  class="btn-icon"
+                  (click)="editar(area)"
+                  [attr.aria-label]="'Editar área ' + area.nombre"
+                >Editar</button>
+                <button
+                  type="button"
+                  class="btn-icon btn-icon--danger"
+                  [disabled]="area.cantidadProductos > 0"
+                  [attr.title]="area.cantidadProductos > 0 ? 'Tiene productos: desactívela en lugar de eliminarla' : null"
+                  (click)="confirmarEliminar(area)"
+                  [attr.aria-label]="'Eliminar área ' + area.nombre"
+                >Eliminar</button>
+              </td>
+            </tr>
+          } @empty {
+            <tr>
+              <td [attr.colspan]="impuestos()?.responsableIva ? 5 : 4" class="state-cell">
+                No hay áreas de negocio. Cree al menos una para poder registrar productos.
+              </td>
+            </tr>
+          }
+        }
+      </tbody>
+    </table>
+  </div>
+</div>
+
+@if (areaEnEdicion() !== undefined) {
+  <div class="backdrop" (click)="cerrarDialogos()">
+    <div
+      class="dialog dialog--narrow"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="area-dialog-titulo"
+      (click)="$event.stopPropagation()"
+    >
+      <div class="dialog-header">
+        <h2 id="area-dialog-titulo" class="dialog-title">
+          {{ areaEnEdicion() ? 'Editar área de negocio' : 'Nueva área de negocio' }}
+        </h2>
+        <button type="button" class="dialog-close" (click)="cerrarDialogos()" aria-label="Cerrar">✕</button>
+      </div>
+
+      <form [formGroup]="form" (ngSubmit)="guardar()" novalidate>
+        <div class="dialog-body">
+          <div class="field">
+            <label for="area-nombre">Nombre<span class="required" aria-hidden="true">*</span></label>
+            <input
+              #nombreInput
+              id="area-nombre"
+              type="text"
+              formControlName="nombre"
+              maxlength="50"
+              autocomplete="off"
+              [attr.aria-invalid]="mostrarErrorNombre() ? 'true' : null"
+              aria-describedby="area-nombre-ayuda"
+            />
+            <span id="area-nombre-ayuda" class="hint-msg" [class.error-msg]="mostrarErrorNombre()">
+              Entre 2 y 50 caracteres. Ej.: Dulcería, Papelería.
+            </span>
+          </div>
+
+          @if (impuestos(); as imp) {
+            @if (imp.responsableIva) {
+              <div class="field">
+                <label for="area-tarifa">Tarifa de impuesto</label>
+                <select id="area-tarifa" formControlName="tarifaImpuestoId" aria-describedby="area-tarifa-ayuda">
+                  <option [ngValue]="null">Por defecto ({{ nombreTarifaPorDefecto() }})</option>
+                  @for (t of imp.tarifas; track t.id) {
+                    <option [ngValue]="t.id">{{ t.nombre }}</option>
+                  }
+                </select>
+                <span id="area-tarifa-ayuda" class="hint-msg">
+                  La usan los productos del área que no tienen tarifa propia.
+                </span>
+              </div>
+            }
+          }
+
+          <label class="check">
+            <input type="checkbox" formControlName="activo" />
+            Área activa (disponible al crear productos)
+          </label>
+
+          @if (errorFormulario()) {
+            <p class="error" role="alert">{{ errorFormulario() }}</p>
+          }
+        </div>
+
+        <div class="dialog-footer">
+          <button type="button" class="btn-secondary" (click)="cerrarDialogos()" [disabled]="guardando()">Cancelar</button>
+          <button type="submit" class="btn-primary" [disabled]="guardando()">
+            {{ guardando() ? 'Guardando…' : 'Guardar' }}
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+}
+
+@if (areaAEliminar(); as area) {
+  <div class="backdrop" (click)="cerrarDialogos()">
+    <div
+      class="dialog dialog--narrow"
+      role="alertdialog"
+      aria-modal="true"
+      aria-labelledby="eliminar-area-titulo"
+      aria-describedby="eliminar-area-texto"
+      (click)="$event.stopPropagation()"
+    >
+      <div class="dialog-header">
+        <h2 id="eliminar-area-titulo" class="dialog-title">Eliminar área de negocio</h2>
+      </div>
+      <div class="dialog-body">
+        <p id="eliminar-area-texto" class="dialog-text">
+          ¿Eliminar el área <strong>{{ area.nombre }}</strong>? Esta acción no se puede deshacer.
+        </p>
+      </div>
+      <div class="dialog-footer">
+        <button type="button" class="btn-secondary" (click)="cerrarDialogos()" [disabled]="eliminando()">Cancelar</button>
+        <button type="button" class="btn-danger" (click)="eliminar()" [disabled]="eliminando()">
+          {{ eliminando() ? 'Eliminando…' : 'Eliminar' }}
+        </button>
+      </div>
+    </div>
+  </div>
+}

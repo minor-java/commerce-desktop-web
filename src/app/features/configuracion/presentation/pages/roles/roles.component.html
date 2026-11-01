@@ -1,0 +1,98 @@
+<div class="page">
+  <div class="toolbar">
+    <div>
+      <h1>Roles y permisos</h1>
+      <p class="toolbar-hint">Defina qué módulos y acciones habilita cada rol.</p>
+    </div>
+    <button type="button" class="btn-primary" (click)="nuevo()" [disabled]="cargando()">Nuevo rol</button>
+  </div>
+
+  @if (error()) {
+    <div class="error" role="alert">{{ error() }}</div>
+  }
+
+  <div class="table-wrapper">
+    <table aria-label="Listado de roles">
+      <thead>
+        <tr>
+          <th scope="col">Rol</th>
+          <th scope="col">Descripción</th>
+          <th scope="col">Módulos</th>
+          <th scope="col" class="col-num">Permisos</th>
+          <th scope="col" class="col-num">Usuarios</th>
+          <th scope="col" class="col-actions">Acciones</th>
+        </tr>
+      </thead>
+      <tbody>
+        @if (cargando()) {
+          <tr><td colspan="6" class="state-cell" aria-live="polite">Cargando…</td></tr>
+        } @else {
+          @for (fila of filas(); track fila.rol.id) {
+            <tr>
+              <td class="col-name">{{ fila.rol.nombre }}</td>
+              <td class="col-muted">{{ fila.rol.descripcion ?? '—' }}</td>
+              <td>{{ fila.modulos.join(', ') }}</td>
+              <td class="col-num">{{ fila.rol.permisos.length }}</td>
+              <td class="col-num">{{ fila.rol.cantidadUsuarios }}</td>
+              <td class="col-actions">
+                <button
+                  type="button"
+                  class="btn-icon"
+                  (click)="editar(fila.rol)"
+                  [attr.aria-label]="'Editar rol ' + fila.rol.nombre"
+                >Editar</button>
+                <button
+                  type="button"
+                  class="btn-icon btn-icon--danger"
+                  [disabled]="fila.rol.cantidadUsuarios > 0"
+                  [attr.title]="fila.rol.cantidadUsuarios > 0 ? 'Tiene usuarios asignados' : null"
+                  (click)="confirmarEliminar(fila.rol)"
+                  [attr.aria-label]="'Eliminar rol ' + fila.rol.nombre"
+                >Eliminar</button>
+              </td>
+            </tr>
+          } @empty {
+            <tr><td colspan="6" class="state-cell">No hay roles registrados.</td></tr>
+          }
+        }
+      </tbody>
+    </table>
+  </div>
+</div>
+
+@if (rolEnEdicion() !== undefined) {
+  <app-rol-form-dialog
+    [rol]="rolEnEdicion() ?? null"
+    [catalogo]="catalogo()"
+    (guardado)="onGuardado($event, rolEnEdicion() === null)"
+    (cerrado)="cerrarFormulario()"
+  />
+}
+
+@if (rolAEliminar(); as rol) {
+  <div class="backdrop" (click)="cancelarEliminar()">
+    <div
+      class="dialog dialog--narrow"
+      role="alertdialog"
+      aria-modal="true"
+      aria-labelledby="eliminar-titulo"
+      aria-describedby="eliminar-texto"
+      (click)="$event.stopPropagation()"
+    >
+      <div class="dialog-header">
+        <h2 id="eliminar-titulo" class="dialog-title">Eliminar rol</h2>
+      </div>
+      <div class="dialog-body">
+        <p id="eliminar-texto" class="dialog-text">
+          ¿Eliminar el rol <strong>{{ rol.nombre }}</strong>? Esta acción no se puede deshacer.
+        </p>
+      </div>
+      <div class="dialog-footer">
+        <button type="button" class="btn-secondary" (click)="cancelarEliminar()" [disabled]="eliminando()">Cancelar</button>
+        <button type="button" class="btn-danger" (click)="eliminar()" [disabled]="eliminando()">
+          {{ eliminando() ? 'Eliminando…' : 'Eliminar' }}
+        </button>
+      </div>
+    </div>
+  </div>
+}

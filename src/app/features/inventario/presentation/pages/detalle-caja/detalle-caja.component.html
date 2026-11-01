@@ -1,0 +1,364 @@
+﻿<div class="page">
+
+  <div class="toolbar">
+    <h2>Detalle de Caja</h2>
+    <button class="btn-volver" type="button" (click)="volver()">&#8592; Volver</button>
+  </div>
+
+  @if (caja(); as c) {
+    <div class="caja-info" aria-label="Información de la caja">
+      <div class="caja-info__header">
+        <div class="caja-info__campo">
+          <span class="caja-info__etiqueta">Id Caja</span>
+          <span class="caja-info__valor">#{{ c.id }}</span>
+        </div>
+        <div class="caja-info__campo">
+          <span class="caja-info__etiqueta">Estado</span>
+          <span class="caja-info__valor">
+            <span
+              class="estado-badge"
+              [class.estado-badge--abierta]="c.estado === 'ABIERTA'"
+              [class.estado-badge--cerrada]="c.estado === 'CERRADA'"
+            >{{ c.estado === 'ABIERTA' ? 'Abierta' : 'Cerrada' }}</span>
+          </span>
+        </div>
+        <div class="caja-info__campo">
+          <span class="caja-info__etiqueta">Usuario</span>
+          <span class="caja-info__valor">#{{ c.usuarioId }} {{ c.usuario }}</span>
+        </div>
+        <div class="caja-info__campo">
+          <span class="caja-info__etiqueta">Monto Inicial</span>
+          <span class="caja-info__valor">{{ c.montoInicial | number:'1.0-2' }}</span>
+        </div>
+        <div class="caja-info__campo">
+          <span class="caja-info__etiqueta">Total Ingresos</span>
+          <span class="caja-info__valor">
+            <span class="ingresos-badge">{{ c.totalIngresos | number:'1.0-2' }}</span>
+          </span>
+        </div>
+        <div class="caja-info__campo">
+          <span class="caja-info__etiqueta">Total Egresos</span>
+          <span class="caja-info__valor">{{ c.totalEgresos | number:'1.0-2' }}</span>
+        </div>
+        <div class="caja-info__campo">
+          <span class="caja-info__etiqueta">Monto Cierre Real</span>
+          <span class="caja-info__valor">
+            {{ c.montoCierreReal !== null ? (c.montoCierreReal | number:'1.0-2') : '-' }}
+          </span>
+        </div>
+        <div class="caja-info__campo">
+          <span class="caja-info__etiqueta">Diferencia</span>
+          <span
+            class="caja-info__valor"
+            [class.valor--negativo]="c.diferencia !== null && c.diferencia < 0"
+            [class.valor--positivo]="c.diferencia !== null && c.diferencia > 0"
+          >
+            {{ c.diferencia !== null ? (c.diferencia | number:'1.0-2') : '-' }}
+          </span>
+        </div>
+        <div class="caja-info__campo">
+          <span class="caja-info__etiqueta">Fecha Apertura</span>
+          <span class="caja-info__valor">{{ c.fechaApertura | date:'dd/MM/yyyy HH:mm' }}</span>
+        </div>
+        <div class="caja-info__campo">
+          <span class="caja-info__etiqueta">Fecha Cierre</span>
+          <span class="caja-info__valor">
+            {{ c.fechaCierre ? (c.fechaCierre | date:'dd/MM/yyyy HH:mm') : '-' }}
+          </span>
+        </div>
+      </div>
+    </div>
+  }
+
+  @if (error()) {
+    <div class="error" role="alert">{{ error() }}</div>
+  }
+
+  <!-- ── Movimientos view ─────────────────────────────────────────────── -->
+  @if (vistaActual() === 'movimientos') {
+    <div class="section-header">
+      <span class="section-title">Movimientos</span>
+      <button class="btn-limpiar" type="button" (click)="limpiarFiltros()">
+        Limpiar filtros
+      </button>
+    </div>
+
+    <div class="table-wrapper">
+      <table aria-label="Movimientos de la caja">
+        <thead>
+          <tr>
+            <th scope="col">Tipo</th>
+            <th scope="col">Método Pago</th>
+            <th scope="col" class="col-number">Monto</th>
+            <th scope="col">Referencia Tipo</th>
+          </tr>
+          <tr class="filter-row">
+            <th>
+              <select
+                [value]="filtroTipo()"
+                (change)="filtroTipo.set($any($event.target).value)"
+                aria-label="Filtrar por tipo"
+              >
+                <option value="">Todos</option>
+                <option value="INGRESO">Ingreso</option>
+                <option value="EGRESO">Egreso</option>
+              </select>
+            </th>
+            <th>
+              <select
+                [value]="filtroMetodoPago()"
+                (change)="filtroMetodoPago.set($any($event.target).value)"
+                aria-label="Filtrar por método de pago"
+              >
+                <option value="">Todos</option>
+                <option value="EFECTIVO">Efectivo</option>
+                <option value="TRANSFERENCIA">Transferencia</option>
+              </select>
+            </th>
+            <th>
+              <input
+                type="text"
+                [value]="filtroMontoPendiente()"
+                (input)="filtroMontoPendiente.set($any($event.target).value)"
+                (keydown.enter)="aplicarFiltroMonto()"
+                placeholder="Filtrar... (Enter)"
+                aria-label="Filtrar por monto (presione Enter para aplicar)"
+              />
+            </th>
+            <th>
+              <select
+                [value]="filtroReferenciaTipo()"
+                (change)="filtroReferenciaTipo.set($any($event.target).value)"
+                aria-label="Filtrar por referencia tipo"
+              >
+                <option value="">Todos</option>
+                <option value="VENTA">Venta</option>
+                <option value="REVERSO">Reverso</option>
+              </select>
+            </th>
+          </tr>
+        </thead>
+        <tbody>
+          @if (cargando()) {
+            <tr>
+              <td colspan="4" class="state-cell" aria-live="polite">Cargando...</td>
+            </tr>
+          } @else {
+            @for (item of movimientosFiltrados(); track item.id) {
+              <tr
+                [class.row-clickable]="movimientoCargandoId() === null"
+                [class.row-loading]="movimientoCargandoId() === item.id"
+                (click)="abrirMovimiento(item)"
+                (keydown.enter)="abrirMovimiento(item)"
+                (keydown.space)="abrirMovimiento(item)"
+                [attr.tabindex]="movimientoCargandoId() === null ? 0 : -1"
+                [attr.aria-label]="'Ver detalle de movimiento ' + item.referenciaTipo + ' #' + item.referenciaId"
+                [attr.aria-busy]="movimientoCargandoId() === item.id"
+              >
+                <td>
+                  <span
+                    class="tipo-badge"
+                    [class.tipo-badge--ingreso]="item.tipo === 'INGRESO'"
+                    [class.tipo-badge--egreso]="item.tipo === 'EGRESO'"
+                  >{{ item.tipo }}</span>
+                </td>
+                <td>{{ item.metodoPago }}</td>
+                <td
+                  class="col-number"
+                  [class.monto--egreso]="item.tipo === 'EGRESO'"
+                >{{ item.monto | number:'1.0-2' }}</td>
+                <td class="ref-cell">
+                  {{ item.referenciaTipo }}
+                  @if (movimientoCargandoId() === item.id) {
+                    <span class="row-spinner" aria-hidden="true"></span>
+                  }
+                </td>
+              </tr>
+            } @empty {
+              <tr>
+                <td colspan="4" class="state-cell">Sin movimientos para mostrar.</td>
+              </tr>
+            }
+          }
+        </tbody>
+      </table>
+    </div>
+  }
+
+  <!-- ── Venta detail view ────────────────────────────────────────────── -->
+  @if (vistaActual() === 'venta') {
+    <div class="section-header">
+      <span class="section-title">Detalle de Venta</span>
+      <button class="btn-limpiar" type="button" (click)="volverAMovimientos()">
+        &#8592; Volver a movimientos
+      </button>
+    </div>
+
+    @if (cargandoDetalle()) {
+      <div class="state-msg" aria-live="polite">Cargando...</div>
+    } @else if (errorDetalle()) {
+      <div class="error" role="alert">{{ errorDetalle() }}</div>
+    } @else if (ventaDetalle(); as v) {
+      <div class="detalle-info" aria-label="Información de la venta">
+        <div class="detalle-info__header">
+          <div class="detalle-info__campo">
+            <span class="detalle-info__etiqueta">Id Venta</span>
+            <span class="detalle-info__valor">#{{ v.id }}</span>
+          </div>
+          <div class="detalle-info__campo">
+            <span class="detalle-info__etiqueta">Total</span>
+            <span class="detalle-info__valor">{{ v.total | number:'1.0-2' }}</span>
+          </div>
+          <div class="detalle-info__campo">
+            <span class="detalle-info__etiqueta">Fecha Venta</span>
+            <span class="detalle-info__valor">{{ v.fechaCreacion | date:'dd/MM/yyyy HH:mm' }}</span>
+          </div>
+          <div class="detalle-info__campo">
+            <span class="detalle-info__etiqueta">Usuario</span>
+            <span class="detalle-info__valor">#{{ v.usuarioId }}{{ v.usuario ? ' ' + v.usuario : '' }}</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="table-wrapper">
+        <table aria-label="Detalle de la venta">
+          <thead>
+            <tr>
+              <th scope="col">Producto</th>
+              <th scope="col" class="col-number">Cantidad</th>
+              <th scope="col" class="col-number">Costo</th>
+              <th scope="col" class="col-number">Precio Venta</th>
+              <th scope="col" class="col-number">Subtotal</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (det of v.detalles; track det.id) {
+              <tr>
+                <td>{{ det.nombreProducto }}</td>
+                <td class="col-number">{{ det.cantidad | number:'1.0-2' }}</td>
+                <td class="col-number">{{ det.costoUnitario !== null ? (det.costoUnitario | number:'1.0-2') : '-' }}</td>
+                <td class="col-number">{{ det.precioUnitario | number:'1.0-2' }}</td>
+                <td class="col-number">{{ det.subtotal | number:'1.0-2' }}</td>
+              </tr>
+            } @empty {
+              <tr>
+                <td colspan="5" class="state-cell">Sin items.</td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    }
+  }
+
+  <!-- ── Reverso detail view ──────────────────────────────────────────── -->
+  @if (vistaActual() === 'reverso') {
+    <div class="section-header">
+      <span class="section-title">Detalle de Reverso</span>
+      <button class="btn-limpiar" type="button" (click)="volverAMovimientos()">
+        &#8592; Volver a movimientos
+      </button>
+    </div>
+
+    @if (cargandoDetalle()) {
+      <div class="state-msg" aria-live="polite">Cargando...</div>
+    } @else if (errorDetalle()) {
+      <div class="error" role="alert">{{ errorDetalle() }}</div>
+    } @else if (reversoDetalle(); as r) {
+      <div class="detalle-info" aria-label="Información del reverso">
+        <div class="detalle-info__header">
+          <div class="detalle-info__campo">
+            <span class="detalle-info__etiqueta">Id Reverso</span>
+            <span class="detalle-info__valor">#{{ r.id }}</span>
+          </div>
+          <div class="detalle-info__campo">
+            <span class="detalle-info__etiqueta">Cantidad Reversada</span>
+            <span class="detalle-info__valor">{{ r.cantidadReversada | number:'1.0-2' }}</span>
+          </div>
+          <div class="detalle-info__campo">
+            <span class="detalle-info__etiqueta">Observación</span>
+            <span class="detalle-info__valor">{{ r.observacion ?? '-' }}</span>
+          </div>
+          <div class="detalle-info__campo">
+            <span class="detalle-info__etiqueta">Fecha Reverso</span>
+            <span class="detalle-info__valor">{{ r.fechaCreacion | date:'dd/MM/yyyy HH:mm' }}</span>
+          </div>
+          <div class="detalle-info__campo">
+            <span class="detalle-info__etiqueta">Usuario</span>
+            <span class="detalle-info__valor">#{{ r.usuarioId }}{{ r.usuario ? ' ' + r.usuario : '' }}</span>
+          </div>
+        </div>
+      </div>
+
+      @if (r.comboId) {
+        <div class="detalle-info" aria-label="Combo reversado">
+          <div class="detalle-info__header">
+            <div class="detalle-info__campo">
+              <span class="detalle-info__etiqueta">Combo</span>
+              <span class="detalle-info__valor">{{ r.nombreCombo ?? ('Combo #' + r.comboId) }}</span>
+            </div>
+            <div class="detalle-info__campo">
+              <span class="detalle-info__etiqueta">Precio Venta Combo</span>
+              <span class="detalle-info__valor">
+                {{ r.precioVenta !== null ? (r.precioVenta | number:'1.0-2') : '-' }}
+              </span>
+            </div>
+          </div>
+        </div>
+
+        <div class="table-wrapper">
+          <table aria-label="Productos del combo reversado">
+            <thead>
+              <tr>
+                <th scope="col">Producto</th>
+                <th scope="col" class="col-number">Cantidad</th>
+                <th scope="col" class="col-number">Costo</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (item of r.items ?? []; track item.productoId) {
+                <tr>
+                  <td>{{ item.nombreProducto ?? ('Producto #' + item.productoId) }}</td>
+                  <td class="col-number">{{ item.cantidad | number:'1.0-2' }}</td>
+                  <td class="col-number">{{ item.costoUnitario !== null ? (item.costoUnitario | number:'1.0-2') : '-' }}</td>
+                </tr>
+              } @empty {
+                <tr>
+                  <td colspan="3" class="state-cell">Sin items del combo.</td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      } @else {
+        <div class="table-wrapper">
+          <table aria-label="Producto reversado">
+            <thead>
+              <tr>
+                <th scope="col">Producto</th>
+                <th scope="col" class="col-number">Cantidad</th>
+                <th scope="col" class="col-number">Costo</th>
+                <th scope="col" class="col-number">Precio Venta</th>
+              </tr>
+            </thead>
+            <tbody>
+              @if (r.nombreProducto) {
+                <tr>
+                  <td>{{ r.nombreProducto }}</td>
+                  <td class="col-number">{{ r.cantidad | number:'1.0-2' }}</td>
+                  <td class="col-number">{{ r.costoUnitario !== null ? (r.costoUnitario | number:'1.0-2') : '-' }}</td>
+                  <td class="col-number">{{ r.precioVenta !== null ? (r.precioVenta | number:'1.0-2') : '-' }}</td>
+                </tr>
+              } @else {
+                <tr>
+                  <td colspan="4" class="state-cell">Sin información del producto.</td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      }
+    }
+  }
+
+</div>

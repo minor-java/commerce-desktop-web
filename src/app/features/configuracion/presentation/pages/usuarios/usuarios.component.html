@@ -1,0 +1,100 @@
+<div class="page">
+  <div class="toolbar">
+    <div>
+      <h1>Usuarios</h1>
+      <p class="toolbar-hint">Cree usuarios, asígneles un rol y administre su acceso.</p>
+    </div>
+    <button type="button" class="btn-primary" (click)="nuevo()">Nuevo usuario</button>
+  </div>
+
+  @if (error()) {
+    <div class="error" role="alert">{{ error() }}</div>
+  }
+
+  <div class="table-wrapper">
+    <table aria-label="Listado de usuarios">
+      <thead>
+        <tr>
+          <th scope="col">Usuario</th>
+          <th scope="col">Nombre</th>
+          <th scope="col">Rol</th>
+          <th scope="col">Estado</th>
+          <th scope="col">Último ingreso</th>
+          <th scope="col" class="col-actions">Acciones</th>
+        </tr>
+      </thead>
+      <tbody>
+        @if (cargando()) {
+          <tr><td colspan="6" class="state-cell" aria-live="polite">Cargando…</td></tr>
+        } @else {
+          @for (u of usuarios(); track u.id) {
+            <tr>
+              <td class="col-name">
+                {{ u.usuario }}
+                @if (u.id === usuarioActualId()) {
+                  <span class="col-muted">(usted)</span>
+                }
+              </td>
+              <td>{{ u.nombre ?? '—' }}</td>
+              <td>{{ u.rolNombre ?? 'Sin rol' }}</td>
+              <td>
+                <span class="badge" [class.badge--activo]="u.activo" [class.badge--inactivo]="!u.activo">
+                  {{ u.activo ? 'Activo' : 'Inactivo' }}
+                </span>
+                @if (u.bloqueado) {
+                  <span class="badge badge--bloqueado">Bloqueado</span>
+                }
+                @if (u.debeCambiarContrasena) {
+                  <span class="badge badge--pendiente" title="Debe cambiar su contraseña al ingresar">Clave temporal</span>
+                }
+              </td>
+              <td class="col-muted">{{ u.ultimoLogin ? (u.ultimoLogin | date: 'dd/MM/yyyy HH:mm') : 'Nunca' }}</td>
+              <td class="col-actions">
+                @if (u.bloqueado) {
+                  <button
+                    type="button"
+                    class="btn-icon"
+                    [disabled]="procesandoId() === u.id"
+                    (click)="desbloquear(u)"
+                    [attr.aria-label]="'Desbloquear a ' + u.usuario"
+                  >Desbloquear</button>
+                }
+                <button
+                  type="button"
+                  class="btn-icon"
+                  (click)="restablecer(u)"
+                  [attr.aria-label]="'Restablecer contraseña de ' + u.usuario"
+                >Contraseña</button>
+                <button
+                  type="button"
+                  class="btn-icon"
+                  (click)="editar(u)"
+                  [attr.aria-label]="'Editar a ' + u.usuario"
+                >Editar</button>
+              </td>
+            </tr>
+          } @empty {
+            <tr><td colspan="6" class="state-cell">No hay usuarios registrados.</td></tr>
+          }
+        }
+      </tbody>
+    </table>
+  </div>
+</div>
+
+@if (dialogoFormulario(); as d) {
+  <app-usuario-form-dialog
+    [usuario]="d.usuario"
+    [roles]="roles()"
+    (guardado)="onUsuarioGuardado($event, d.usuario === null)"
+    (cerrado)="cerrarDialogo()"
+  />
+}
+
+@if (dialogoContrasena(); as d) {
+  <app-restablecer-contrasena-dialog
+    [usuario]="d.usuario"
+    (guardado)="onGuardado($event, 'Contraseña de ' + d.usuario.usuario + ' restablecida')"
+    (cerrado)="cerrarDialogo()"
+  />
+}

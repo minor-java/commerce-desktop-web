@@ -1,0 +1,181 @@
+﻿<div class="page">
+  <div class="toolbar">
+    <h2>Compras</h2>
+    <div class="toolbar-actions">
+      <button class="btn-limpiar" type="button" (click)="limpiarFiltros()">
+        Limpiar filtros
+      </button>
+      @if (puedeCrear()) {
+        <button class="btn-primary" type="button" (click)="crearNuevaCompra()">
+          Crear nueva compra
+        </button>
+      }
+    </div>
+  </div>
+
+  @if (error()) {
+    <div class="error" role="alert">{{ error() }}</div>
+  }
+
+
+  <div class="table-wrapper">
+    <table aria-label="Listado de compras. Haga clic en una fila para ver el detalle.">
+      <thead>
+        <tr>
+          <th scope="col">Proveedor</th>
+          <th scope="col">Fecha Registro</th>
+          <th scope="col">Total Costo</th>
+        </tr>
+        <tr class="filter-row">
+          <th>
+            <input
+              type="text"
+              [value]="filtroProveedor()"
+              (input)="filtroProveedor.set($any($event.target).value)"
+              (keydown.enter)="aplicarFiltros()"
+              placeholder="Filtrar..."
+              aria-label="Filtrar por proveedor"
+            />
+          </th>
+          <th>
+            <div class="date-range-filter">
+              <div class="date-input-group">
+                <label for="filtro-fecha-desde" class="range-label">Desde</label>
+                <input
+                  type="date"
+                  id="filtro-fecha-desde"
+                  [value]="filtroFechaDesde()"
+                  [max]="maxFechaDesde()"
+                  (change)="cambiarFechaDesde($event)"
+                  aria-label="Fecha desde"
+                />
+              </div>
+              <div class="date-input-group">
+                <label for="filtro-fecha-hasta" class="range-label">Hasta</label>
+                <input
+                  type="date"
+                  id="filtro-fecha-hasta"
+                  [value]="filtroFechaHasta()"
+                  [min]="filtroFechaDesde() || null"
+                  [max]="hoy"
+                  (change)="cambiarFechaHasta($event)"
+                  aria-label="Fecha hasta"
+                />
+              </div>
+            </div>
+          </th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        @if (cargando()) {
+          <tr>
+            <td colspan="3" class="state-cell" aria-live="polite">Cargando...</td>
+          </tr>
+        } @else {
+          @for (item of compras(); track item.id) {
+            <tr
+              (click)="abrirDetalle(item)"
+              tabindex="0"
+              (keydown.enter)="abrirDetalle(item)"
+              (keydown.space)="$event.preventDefault(); abrirDetalle(item)"
+              class="row-clickable"
+            >
+              <td>{{ item.proveedor ?? 'Sin proveedor' }}</td>
+              <td>{{ item.fechaCreacion | date:'dd/MM/yyyy, HH:mm' }}</td>
+              <td>{{ item.total | number:'1.0-2' }}</td>
+            </tr>
+          } @empty {
+            <tr>
+              <td colspan="3" class="state-cell">Sin compras para mostrar.</td>
+            </tr>
+          }
+        }
+      </tbody>
+    </table>
+  </div>
+
+  <app-pagination
+    [page]="page()"
+    [size]="size()"
+    [totalRows]="totalRows()"
+    [totalPages]="totalPages()"
+    (pageChange)="cambiarPagina($event)"
+    (sizeChange)="cambiarTamano($event)"
+  ></app-pagination>
+</div>
+
+<dialog
+  #detalleDialog
+  class="compra-dialog"
+  aria-labelledby="dialog-titulo"
+  (close)="alCerrarDialog()"
+>
+  <div class="dialog-header">
+    <h2 id="dialog-titulo" class="dialog-titulo">Detalle de compra</h2>
+  </div>
+
+  <div class="dialog-body">
+    <div class="dialog-info" aria-label="Información de la compra">
+      <div class="info-card">
+        <span class="info-label">Proveedor</span>
+        <span class="info-value">{{ compraSeleccionada()?.proveedor ?? 'Sin proveedor' }}</span>
+      </div>
+      <div class="info-card">
+        <span class="info-label">Fecha Registro</span>
+        <span class="info-value">
+          {{ compraSeleccionada()?.fechaCreacion | date:'dd/MM/yyyy, HH:mm' }}
+        </span>
+      </div>
+      <div class="info-card">
+        <span class="info-label">Total Costo</span>
+        <span class="info-value info-value--total">
+          {{ compraSeleccionada()?.total | number:'1.0-2' }}
+        </span>
+      </div>
+    </div>
+
+    <div class="dialog-table-section">
+      <p class="dialog-table-label">Productos incluidos</p>
+
+      @if (cargandoDetalle()) {
+        <p class="dialog-state" aria-live="polite">Cargando detalle...</p>
+      } @else if (errorDetalle()) {
+        <p class="dialog-error" role="alert">{{ errorDetalle() }}</p>
+      } @else {
+        <div class="dialog-table-wrapper">
+          <table aria-label="Detalle de productos de la compra">
+            <thead>
+              <tr>
+                <th scope="col">Nombre</th>
+                <th scope="col" class="col-number">Cantidad</th>
+                <th scope="col" class="col-number">Costo Unitario</th>
+                <th scope="col" class="col-number">Subtotal</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (detalle of detalles(); track detalle.id) {
+                <tr>
+                  <td>{{ detalle.producto.nombre }}</td>
+                  <td class="col-number">{{ detalle.cantidad | number:'1.0-2' }}</td>
+                  <td class="col-number">{{ detalle.costoUnitario | number:'1.0-2' }}</td>
+                  <td class="col-number">{{ detalle.subtotal | number:'1.0-2' }}</td>
+                </tr>
+              } @empty {
+                <tr>
+                  <td colspan="4" class="state-cell">Sin detalles registrados.</td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      }
+    </div>
+  </div>
+
+  <div class="dialog-actions">
+    <button class="btn-primary" type="button" (click)="detalleDialog.close()">
+      Aceptar
+    </button>
+  </div>
+</dialog>

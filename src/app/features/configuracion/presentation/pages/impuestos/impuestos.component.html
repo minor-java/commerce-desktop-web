@@ -1,0 +1,268 @@
+<div class="page">
+  <div class="toolbar">
+    <div>
+      <h1>Impuestos</h1>
+      <p class="toolbar-hint">
+        Los precios de venta ya incluyen el impuesto: el sistema solo lo desglosa en la venta, el recibo y el reporte.
+        @if (configuracion()?.fechaActualizacion; as fecha) {
+          <br />Última modificación: {{ fecha | date: 'dd/MM/yyyy HH:mm' }}@if (configuracion()?.usuarioActualizacion; as u) { por {{ u }} }
+        }
+      </p>
+    </div>
+  </div>
+
+  @if (error()) {
+    <div class="error" role="alert">
+      {{ error() }}
+      <button type="button" class="btn-icon" (click)="cargar()">Reintentar</button>
+    </div>
+  } @else if (cargando()) {
+    <p class="estado" aria-live="polite">Cargando configuración…</p>
+  } @else {
+    <form class="tarjeta" [formGroup]="configForm" (ngSubmit)="guardarConfiguracion()" novalidate>
+      <h2 class="tarjeta-titulo">Régimen del negocio</h2>
+
+      <label class="check">
+        <input type="checkbox" formControlName="responsableIva" aria-describedby="responsable-ayuda" />
+        El negocio es responsable de IVA
+      </label>
+      <p id="responsable-ayuda" class="hint-msg">
+        Si no lo es, las ventas no se desglosan y el recibo no muestra impuestos (como hasta ahora).
+        El cambio aplica a las ventas nuevas; las ya registradas no se modifican.
+      </p>
+
+      @if (responsable()) {
+        <label class="check">
+          <input type="checkbox" formControlName="mostrarDesgloseRecibo" />
+          Mostrar base e impuesto por tarifa en el recibo
+        </label>
+        <div class="field">
+          <label for="leyenda-recibo">Leyenda del recibo</label>
+          <input
+            id="leyenda-recibo"
+            type="text"
+            formControlName="leyendaRecibo"
+            maxlength="100"
+            placeholder="Precios con impuestos incluidos"
+            aria-describedby="leyenda-ayuda"
+          />
+          <span id="leyenda-ayuda" class="hint-msg">Se imprime debajo del desglose. Déjela vacía para no imprimirla.</span>
+        </div>
+        <p class="aviso" role="note">
+          El tiquete POS impreso no es factura electrónica ni documento equivalente electrónico ante la DIAN.
+          Consulte con su contador qué documento debe expedir su negocio.
+        </p>
+      }
+
+      <div class="acciones">
+        @if (configSinGuardar()) {
+          <span class="badge badge--pendiente" role="status">Cambios sin guardar</span>
+        }
+        <button type="button" class="btn-secondary" (click)="descartarConfiguracion()" [disabled]="!configSinGuardar() || guardandoConfig()">
+          Descartar
+        </button>
+        <button type="submit" class="btn-primary" [disabled]="!configSinGuardar() || guardandoConfig()">
+          {{ guardandoConfig() ? 'Guardando…' : 'Guardar' }}
+        </button>
+      </div>
+    </form>
+
+    <section class="seccion" aria-labelledby="tarifas-titulo">
+      <div class="toolbar">
+        <div>
+          <h2 id="tarifas-titulo" class="seccion-titulo">Tarifas</h2>
+          <p class="toolbar-hint">
+            Cada producto usa su tarifa propia; si no tiene, la de su área de negocio; si el área tampoco, la tarifa por defecto.
+            Los combos usan la suya o la del área de sus productos.
+          </p>
+        </div>
+        <button type="button" class="btn-primary" (click)="nuevaTarifa()">Nueva tarifa</button>
+      </div>
+
+      <div class="table-wrapper">
+        <table aria-label="Tarifas de impuesto">
+          <thead>
+            <tr>
+              <th scope="col">Tarifa</th>
+              <th scope="col">Tipo</th>
+              <th scope="col">Clasificación</th>
+              <th scope="col" class="col-num">Porcentaje</th>
+              <th scope="col">Asignada a</th>
+              <th scope="col">Estado</th>
+              <th scope="col" class="col-actions">Acciones</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (t of tarifas(); track t.id) {
+              <tr>
+                <td class="col-name">
+                  {{ t.nombre }}
+                  @if (t.porDefecto) {
+                    <span class="badge badge--defecto">Por defecto</span>
+                  }
+                </td>
+                <td>{{ t.tipo }}</td>
+                <td>{{ etiquetaClasificacion(t.clasificacion) }}</td>
+                <td class="col-num">{{ t.porcentaje | number: '1.0-2' }}%</td>
+                <td class="col-muted">{{ usoTexto(t) }}</td>
+                <td>
+                  <span class="badge" [class.badge--activo]="t.activo" [class.badge--inactivo]="!t.activo">
+                    {{ t.activo ? 'Activa' : 'Inactiva' }}
+                  </span>
+                </td>
+                <td class="col-actions">
+                  <button type="button" class="btn-icon" (click)="editarTarifa(t)" [attr.aria-label]="'Editar tarifa ' + t.nombre">
+                    Editar
+                  </button>
+                  <button
+                    type="button"
+                    class="btn-icon btn-icon--danger"
+                    [disabled]="!puedeEliminar(t)"
+                    [attr.title]="motivoNoEliminar(t)"
+                    (click)="confirmarEliminar(t)"
+                    [attr.aria-label]="'Eliminar tarifa ' + t.nombre"
+                  >Eliminar</button>
+                </td>
+              </tr>
+            } @empty {
+              <tr><td colspan="7" class="state-cell">No hay tarifas.</td></tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    </section>
+  }
+</div>
+
+@if (tarifaEnEdicion() !== undefined) {
+  <div class="backdrop" (click)="cerrarDialogos()">
+    <div
+      class="dialog dialog--tarifa"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="tarifa-dialog-titulo"
+      (click)="$event.stopPropagation()"
+    >
+      <div class="dialog-header">
+        <h2 id="tarifa-dialog-titulo" class="dialog-title">
+          {{ tarifaEnEdicion() ? 'Editar tarifa' : 'Nueva tarifa' }}
+        </h2>
+        <button type="button" class="dialog-close" (click)="cerrarDialogos()" aria-label="Cerrar">✕</button>
+      </div>
+
+      <form [formGroup]="tarifaForm" (ngSubmit)="guardarTarifa()" novalidate>
+        <div class="dialog-body">
+          <div class="field">
+            <label for="tarifa-nombre">Nombre<span class="required" aria-hidden="true">*</span></label>
+            <input
+              #nombreInput
+              id="tarifa-nombre"
+              type="text"
+              formControlName="nombre"
+              maxlength="40"
+              autocomplete="off"
+              [attr.aria-invalid]="mostrarErrorNombre() ? 'true' : null"
+              aria-describedby="tarifa-nombre-ayuda"
+            />
+            <span id="tarifa-nombre-ayuda" class="hint-msg" [class.error-msg]="mostrarErrorNombre()">
+              Entre 2 y 40 caracteres. Se imprime en el recibo. Ej.: IVA 19%.
+            </span>
+          </div>
+
+          <div class="tarifa-fila">
+            <div class="field">
+              <label for="tarifa-tipo">Impuesto</label>
+              <select id="tarifa-tipo" formControlName="tipo" aria-describedby="tarifa-tipo-ayuda">
+                <option value="IVA">IVA</option>
+                <option value="INC">INC</option>
+              </select>
+            </div>
+            <div class="field">
+              <label for="tarifa-clasificacion">Clasificación</label>
+              <select id="tarifa-clasificacion" formControlName="clasificacion" aria-describedby="tarifa-clasificacion-ayuda">
+                @for (c of clasificaciones; track c.valor) {
+                  <option [value]="c.valor" [disabled]="esInc() && c.valor !== 'GRAVADO'">{{ c.etiqueta }}</option>
+                }
+              </select>
+            </div>
+            <div class="field">
+              <label for="tarifa-porcentaje">Porcentaje (%)</label>
+              <input
+                id="tarifa-porcentaje"
+                type="number"
+                formControlName="porcentaje"
+                min="0"
+                max="99.99"
+                step="0.01"
+                [readonly]="!esGravada()"
+                aria-describedby="tarifa-porcentaje-ayuda"
+              />
+            </div>
+          </div>
+
+          <ul class="tarifa-ayudas">
+            <li id="tarifa-tipo-ayuda" class="hint-msg">
+              {{ esInc() ? 'INC: impuesto nacional al consumo (p. ej. restaurantes). Solo puede ser gravado.' : 'IVA: impuesto sobre las ventas.' }}
+            </li>
+            <li id="tarifa-clasificacion-ayuda" class="hint-msg">{{ ayudaClasificacion() }}.</li>
+            <li id="tarifa-porcentaje-ayuda" class="hint-msg">
+              @if (esGravada()) {
+                Porcentaje mayor a 0 y menor a 100. Cambiarlo no afecta las ventas ya registradas.
+              } @else {
+                Las tarifas exentas y excluidas son 0%.
+              }
+            </li>
+          </ul>
+
+          <label class="check">
+            <input type="checkbox" formControlName="activo" />
+            Activa (disponible para asignar)
+          </label>
+          <label class="check">
+            <input type="checkbox" formControlName="porDefecto" />
+            Tarifa por defecto (productos y áreas sin tarifa propia)
+          </label>
+
+          @if (errorTarifa()) {
+            <p class="error" role="alert">{{ errorTarifa() }}</p>
+          }
+        </div>
+
+        <div class="dialog-footer">
+          <button type="button" class="btn-secondary" (click)="cerrarDialogos()" [disabled]="guardandoTarifa()">Cancelar</button>
+          <button type="submit" class="btn-primary" [disabled]="guardandoTarifa()">
+            {{ guardandoTarifa() ? 'Guardando…' : 'Guardar' }}
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+}
+
+@if (tarifaAEliminar(); as t) {
+  <div class="backdrop" (click)="cerrarDialogos()">
+    <div
+      class="dialog dialog--narrow"
+      role="alertdialog"
+      aria-modal="true"
+      aria-labelledby="eliminar-tarifa-titulo"
+      aria-describedby="eliminar-tarifa-texto"
+      (click)="$event.stopPropagation()"
+    >
+      <div class="dialog-header">
+        <h2 id="eliminar-tarifa-titulo" class="dialog-title">Eliminar tarifa</h2>
+      </div>
+      <div class="dialog-body">
+        <p id="eliminar-tarifa-texto" class="dialog-text">
+          ¿Eliminar la tarifa <strong>{{ t.nombre }}</strong>? Esta acción no se puede deshacer.
+        </p>
+      </div>
+      <div class="dialog-footer">
+        <button type="button" class="btn-secondary" (click)="cerrarDialogos()" [disabled]="eliminando()">Cancelar</button>
+        <button type="button" class="btn-danger" (click)="eliminar()" [disabled]="eliminando()">
+          {{ eliminando() ? 'Eliminando…' : 'Eliminar' }}
+        </button>
+      </div>
+    </div>
+  </div>
+}

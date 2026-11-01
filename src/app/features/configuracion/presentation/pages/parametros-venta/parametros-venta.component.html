@@ -1,0 +1,109 @@
+<div class="page">
+  <div class="toolbar">
+    <div>
+      <h1>Parámetros de venta</h1>
+      <p class="toolbar-hint">
+        Reglas del punto de venta para todo el negocio. Se combinan con los permisos de cada rol.
+        @if (guardado()?.fechaActualizacion; as fecha) {
+          <br />Última modificación: {{ fecha | date: 'dd/MM/yyyy HH:mm' }}@if (guardado()?.usuarioActualizacion; as u) { por {{ u }} }
+        }
+      </p>
+    </div>
+    <div class="acciones">
+      @if (sinGuardar()) {
+        <span class="badge badge--pendiente" role="status">Cambios sin guardar</span>
+      }
+      <button type="button" class="btn-secondary" (click)="descartar()" [disabled]="!sinGuardar() || guardando()">Descartar</button>
+      <button
+        type="button"
+        class="btn-primary"
+        (click)="guardar()"
+        [disabled]="!sinGuardar() || guardando() || form.invalid || sinMetodos()"
+      >
+        {{ guardando() ? 'Guardando…' : 'Guardar cambios' }}
+      </button>
+    </div>
+  </div>
+
+  @if (error()) {
+    <div class="error" role="alert">
+      {{ error() }}
+      <button type="button" class="btn-icon" (click)="cargar()">Reintentar</button>
+    </div>
+  } @else if (cargando()) {
+    <p class="estado" aria-live="polite">Cargando parámetros…</p>
+  } @else {
+    <form class="columnas" [formGroup]="form" (ngSubmit)="guardar()" novalidate>
+      <fieldset class="tarjeta">
+        <legend class="tarjeta-titulo">Total de la venta</legend>
+        <div class="field">
+          <label for="redondeo">Redondeo del total</label>
+          <select id="redondeo" formControlName="redondeoTotal" aria-describedby="redondeo-ayuda">
+            @for (r of redondeos; track r.valor) {
+              <option [ngValue]="r.valor">{{ r.etiqueta }}</option>
+            }
+          </select>
+          <span id="redondeo-ayuda" class="hint-msg">
+            Redondea al valor más cercano para facilitar el cambio en efectivo. Los precios de cada producto no cambian;
+            la diferencia se muestra como "Redondeo" en el recibo.
+            @if (ejemploRedondeo(); as e) {
+              <br />Ejemplo: $ {{ e.antes | number: '1.0-2' }} → $ {{ e.despues | number: '1.0-2' }}
+            }
+          </span>
+        </div>
+      </fieldset>
+
+      <fieldset class="tarjeta">
+        <legend class="tarjeta-titulo">Precios y descuentos</legend>
+        <label class="check">
+          <input type="checkbox" formControlName="limitarDescuento" aria-describedby="descuento-ayuda" />
+          Limitar el descuento al modificar el precio
+        </label>
+        @if (limitaDescuento()) {
+          <div class="field campo-corto">
+            <label for="descuento-max">Descuento máximo (%)</label>
+            <input id="descuento-max" type="number" formControlName="descuentoMaximo" min="0" max="100" step="0.5" />
+          </div>
+        }
+        <p id="descuento-ayuda" class="hint-msg">
+          Aplica a los roles con el permiso "Modificar precio de venta". Sin límite pueden bajar el precio hasta $1.
+        </p>
+      </fieldset>
+
+      <fieldset class="tarjeta">
+        <legend class="tarjeta-titulo">Inventario</legend>
+        <label class="check">
+          <input type="checkbox" formControlName="venderSinStock" aria-describedby="sin-stock-ayuda" />
+          Permitir vender productos sin stock
+        </label>
+        <p id="sin-stock-ayuda" class="hint-msg">
+          El stock puede quedar en negativo hasta registrar la compra. Útil si se vende antes de ingresar la mercancía.
+          Los combos siguen limitados a sus unidades disponibles.
+        </p>
+      </fieldset>
+
+      <fieldset class="tarjeta">
+        <legend class="tarjeta-titulo">Cobro</legend>
+        <span class="field-label">Métodos de pago que acepta el negocio</span>
+        <div class="checks">
+          <label class="check">
+            <input type="checkbox" formControlName="pagoEfectivo" />
+            Efectivo
+          </label>
+          <label class="check">
+            <input type="checkbox" formControlName="pagoTransferencia" />
+            Transferencia
+          </label>
+        </div>
+        @if (sinMetodos()) {
+          <p class="error-msg" role="alert">Seleccione al menos un método de pago.</p>
+        }
+        <p class="hint-msg">Cada rol además debe tener el permiso del método para poder cobrar con él.</p>
+        <label class="check">
+          <input type="checkbox" formControlName="receptorObligatorio" />
+          Exigir el nombre de quien recibe la venta
+        </label>
+      </fieldset>
+    </form>
+  }
+</div>

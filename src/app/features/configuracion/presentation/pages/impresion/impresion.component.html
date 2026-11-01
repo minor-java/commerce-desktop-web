@@ -1,0 +1,335 @@
+<div class="page">
+  <div class="toolbar">
+    <div>
+      <h1>Impresión</h1>
+      <p class="toolbar-hint">
+        Diseño del recibo de venta e impresora térmica. Los cambios se ven en la vista previa antes de guardar.
+        @if (ultimaActualizacion(); as u) {
+          <br />Última modificación: {{ u.fecha | date: 'dd/MM/yyyy HH:mm' }}@if (u.usuario) { por {{ u.usuario }} }
+        }
+      </p>
+    </div>
+    <div class="toolbar-acciones">
+      @if (sinGuardar()) {
+        <span class="badge badge--pendiente" role="status">Cambios sin guardar</span>
+      }
+      <button type="button" class="btn-secondary" (click)="descartar()" [disabled]="!sinGuardar() || guardando() || cargando()">
+        Descartar
+      </button>
+      <button type="button" class="btn-primary" (click)="guardar()" [disabled]="!sinGuardar() || guardando() || cargando()">
+        {{ guardando() ? 'Guardando…' : 'Guardar cambios' }}
+      </button>
+    </div>
+  </div>
+
+  @if (errorCarga()) {
+    <div class="error" role="alert">
+      {{ errorCarga() }}
+      <button type="button" class="btn-icon" (click)="cargar()">Reintentar</button>
+    </div>
+  } @else if (cargando()) {
+    <p class="estado" aria-live="polite">Cargando configuración…</p>
+  } @else {
+    <div class="contenido">
+      <form class="columna-form" [formGroup]="form" (ngSubmit)="guardar()" novalidate>
+        <div class="tabs" role="tablist" aria-label="Secciones de impresión" (keydown)="teclaPestana($event)">
+          <button
+            type="button"
+            role="tab"
+            id="tab-recibo"
+            class="tab"
+            [class.tab--activa]="pestana() === 'recibo'"
+            [attr.aria-selected]="pestana() === 'recibo'"
+            [attr.tabindex]="pestana() === 'recibo' ? 0 : -1"
+            aria-controls="panel-recibo"
+            (click)="seleccionarPestana('recibo')"
+          >Diseño del recibo</button>
+          <button
+            type="button"
+            role="tab"
+            id="tab-impresora"
+            class="tab"
+            [class.tab--activa]="pestana() === 'impresora'"
+            [attr.aria-selected]="pestana() === 'impresora'"
+            [attr.tabindex]="pestana() === 'impresora' ? 0 : -1"
+            aria-controls="panel-impresora"
+            (click)="seleccionarPestana('impresora')"
+          >Impresora</button>
+        </div>
+
+        <!-- ═══════════════ RECIBO ═══════════════ -->
+        <div id="panel-recibo" role="tabpanel" aria-labelledby="tab-recibo" class="panel" [hidden]="pestana() !== 'recibo'">
+          <fieldset class="tarjeta">
+            <legend class="tarjeta-titulo">Logo</legend>
+            <div class="logo-fila">
+              @if (tieneLogo()) {
+                <label class="check">
+                  <input type="checkbox" formControlName="mostrarLogo" />
+                  Imprimir logo
+                </label>
+              } @else {
+                <span class="hint-msg">Sin logo cargado.</span>
+              }
+              <div class="logo-acciones">
+                <label class="btn-secondary btn-archivo">
+                  {{ tieneLogo() ? 'Cambiar imagen' : 'Subir imagen' }}
+                  <input type="file" class="sr-only" accept="image/png,image/jpeg,image/gif,image/bmp" (change)="logoSeleccionado($event)" />
+                </label>
+                @if (tieneLogo()) {
+                  <button type="button" class="btn-icon btn-icon--danger" (click)="quitarLogo()">Quitar logo</button>
+                }
+              </div>
+            </div>
+            @if (tieneLogo()) {
+              <div class="field">
+                <label for="logoAncho">Tamaño del logo: {{ logoAnchoPorcentaje() }}% del ancho del papel</label>
+                <input
+                  id="logoAncho"
+                  type="range"
+                  formControlName="logoAncho"
+                  [min]="logoAnchoMin"
+                  [max]="logoAnchoMax()"
+                  step="8"
+                  [attr.aria-valuetext]="logoAnchoPorcentaje() + '% del ancho del papel'"
+                />
+              </div>
+            }
+            <p class="hint-msg">
+              La impresora térmica imprime solo en blanco y negro: use un logo de alto contraste, idealmente fondo blanco.
+              La vista previa muestra cómo quedará.
+            </p>
+          </fieldset>
+
+          <fieldset class="tarjeta">
+            <legend class="tarjeta-titulo">Encabezado del negocio</legend>
+            <div class="field">
+              <label for="titulo">Título</label>
+              <input id="titulo" type="text" formControlName="titulo" maxlength="100" placeholder="Nombre comercial" />
+            </div>
+            <label class="check">
+              <input type="checkbox" formControlName="tituloGrande" />
+              Título en letra grande (doble ancho)
+            </label>
+            <div class="form-row">
+              <div class="field">
+                <label for="razonSocial">Razón social</label>
+                <input id="razonSocial" type="text" formControlName="razonSocial" maxlength="150" />
+              </div>
+              <div class="field">
+                <label for="nit">NIT</label>
+                <input id="nit" type="text" formControlName="nit" maxlength="50" />
+              </div>
+            </div>
+            <div class="form-row">
+              <div class="field">
+                <label for="direccion">Dirección</label>
+                <input id="direccion" type="text" formControlName="direccion" maxlength="200" />
+              </div>
+              <div class="field">
+                <label for="telefono">Teléfono</label>
+                <input id="telefono" type="text" formControlName="telefono" maxlength="50" />
+              </div>
+            </div>
+            <div class="field">
+              <label for="encabezadoExtra">Texto adicional</label>
+              <textarea id="encabezadoExtra" formControlName="encabezadoExtra" maxlength="500" rows="2" aria-describedby="encabezadoExtra-ayuda"></textarea>
+              <span id="encabezadoExtra-ayuda" class="hint-msg">Ej.: régimen tributario, horario, redes sociales. Cada renglón se imprime centrado.</span>
+            </div>
+          </fieldset>
+
+          <fieldset class="tarjeta">
+            <legend class="tarjeta-titulo">Datos de la venta</legend>
+            <div class="checks">
+              <label class="check"><input type="checkbox" formControlName="mostrarNumeroVenta" /> Número de venta</label>
+              <label class="check"><input type="checkbox" formControlName="mostrarCajero" /> Nombre del cajero</label>
+              <label class="check"><input type="checkbox" formControlName="mostrarMetodoPago" /> Método de pago</label>
+              <label class="check"><input type="checkbox" formControlName="mostrarReceptor" /> Cliente (“Para:”)</label>
+              <label class="check"><input type="checkbox" formControlName="mostrarDecimales" /> Valores con decimales</label>
+              <label class="check"><input type="checkbox" formControlName="mostrarQr" /> Código de la venta</label>
+            </div>
+
+            @if (mostrarCodigoVenta()) {
+              <div class="formato-codigo">
+                <span id="formato-codigo-titulo" class="field-label">Formato del código de la venta</span>
+                <div class="opciones" role="radiogroup" aria-labelledby="formato-codigo-titulo">
+                  <label class="opcion" [class.opcion--activa]="formatoCodigoVenta() === 'BARRAS'">
+                    <input type="radio" formControlName="formatoCodigoVenta" value="BARRAS" />
+                    <span>
+                      <strong>Código de barras</strong>
+                      <span class="hint-msg">Igual que las etiquetas de productos. Lo lee la misma pistola lectora y muestra el número debajo.</span>
+                    </span>
+                  </label>
+                  <label class="opcion" [class.opcion--activa]="formatoCodigoVenta() === 'QR'">
+                    <input type="radio" formControlName="formatoCodigoVenta" value="QR" />
+                    <span>
+                      <strong>Código QR</strong>
+                      <span class="hint-msg">Requiere un lector compatible con QR (lector 2D). Muchas pistolas de productos no lo leen.</span>
+                    </span>
+                  </label>
+                </div>
+                <span class="hint-msg">Contiene el número de la venta: se escanea en Devoluciones para buscarla.</span>
+              </div>
+            }
+          </fieldset>
+
+          <fieldset class="tarjeta">
+            <legend class="tarjeta-titulo">Pie del recibo</legend>
+            <div class="field">
+              <label for="mensajePie">Mensaje de agradecimiento</label>
+              <input id="mensajePie" type="text" formControlName="mensajePie" maxlength="200" />
+            </div>
+            <div class="field">
+              <label for="pieExtra">Texto adicional</label>
+              <textarea id="pieExtra" formControlName="pieExtra" maxlength="500" rows="3" aria-describedby="pieExtra-ayuda"></textarea>
+              <span id="pieExtra-ayuda" class="hint-msg">Ej.: política de cambios y devoluciones.</span>
+            </div>
+          </fieldset>
+        </div>
+
+        <!-- ═══════════════ IMPRESORA ═══════════════ -->
+        <div id="panel-impresora" role="tabpanel" aria-labelledby="tab-impresora" class="panel" [hidden]="pestana() !== 'impresora'">
+          <fieldset class="tarjeta">
+            <legend class="tarjeta-titulo">Conexión</legend>
+            <div class="opciones" role="radiogroup" aria-label="Tipo de conexión">
+              <label class="opcion" [class.opcion--activa]="!esRed()">
+                <input type="radio" formControlName="conexion" value="SPOOLER" />
+                <span>
+                  <strong>Instalada en Windows</strong>
+                  <span class="hint-msg">USB o compartida, con su controlador instalado.</span>
+                </span>
+              </label>
+              <label class="opcion" [class.opcion--activa]="esRed()">
+                <input type="radio" formControlName="conexion" value="RED" />
+                <span>
+                  <strong>Por red (IP)</strong>
+                  <span class="hint-msg">Impresora ESC/POS conectada por cable de red o Wi-Fi.</span>
+                </span>
+              </label>
+            </div>
+
+            @if (!esRed()) {
+              <div class="field">
+                <label for="nombreImpresora">Impresora<span class="required" aria-hidden="true">*</span></label>
+                <div class="fila-control">
+                  <select id="nombreImpresora" formControlName="nombreImpresora" aria-required="true" [attr.aria-describedby]="impresoraNoInstalada() ? 'impresora-aviso' : null">
+                    <option value="">— Seleccione —</option>
+                    @if (impresoraNoInstalada()) {
+                      <option [value]="form.controls.nombreImpresora.value">{{ form.controls.nombreImpresora.value }} (no encontrada)</option>
+                    }
+                    @for (imp of impresoras(); track imp.nombre) {
+                      <option [value]="imp.nombre">{{ imp.nombre }}{{ imp.predeterminada ? ' (predeterminada)' : '' }}</option>
+                    }
+                  </select>
+                  <button type="button" class="btn-secondary" (click)="buscarImpresoras(true)" [disabled]="buscandoImpresoras()">
+                    {{ buscandoImpresoras() ? 'Buscando…' : 'Actualizar lista' }}
+                  </button>
+                </div>
+                @if (impresoraNoInstalada()) {
+                  <span id="impresora-aviso" class="error-msg">
+                    La impresora configurada no aparece entre las instaladas en este equipo. Selecciónela de nuevo.
+                  </span>
+                } @else if (!buscandoImpresoras() && impresoras().length === 0) {
+                  <span class="error-msg">No hay impresoras instaladas en Windows.</span>
+                }
+                <p class="hint-msg" role="status">{{ resultadoBusqueda() }}</p>
+              </div>
+            } @else {
+              <div class="form-row">
+                <div class="field">
+                  <label for="host">Dirección IP<span class="required" aria-hidden="true">*</span></label>
+                  <input id="host" type="text" formControlName="host" placeholder="192.168.1.100" aria-required="true" />
+                </div>
+                <div class="field">
+                  <label for="puerto">Puerto</label>
+                  <input id="puerto" type="number" formControlName="puerto" min="1" max="65535" />
+                </div>
+              </div>
+            }
+
+            <div class="acciones-prueba">
+              <button type="button" class="btn-secondary" (click)="probarConexion()" [disabled]="probando()">
+                {{ probando() ? 'Probando…' : 'Probar conexión' }}
+              </button>
+              <button type="button" class="btn-secondary" (click)="imprimirPrueba('pagina')" [disabled]="imprimiendo() !== null">
+                {{ imprimiendo() === 'pagina' ? 'Imprimiendo…' : 'Imprimir página de prueba' }}
+              </button>
+            </div>
+            <div aria-live="polite">
+              @if (resultadoConexion(); as r) {
+                <p class="resultado" [class.resultado--ok]="r.exitosa" [class.resultado--error]="!r.exitosa">
+                  {{ r.exitosa ? '✓' : '✕' }} {{ r.mensaje }}
+                </p>
+              }
+            </div>
+            <p class="hint-msg">Las pruebas usan los valores del formulario, aunque todavía no estén guardados.</p>
+          </fieldset>
+
+          <fieldset class="tarjeta">
+            <legend class="tarjeta-titulo">Papel</legend>
+            <div class="form-row">
+              <div class="field">
+                <label for="anchoPapel">Ancho del papel</label>
+                <select id="anchoPapel" (change)="cambiarAnchoPapel($event)">
+                  @for (a of anchosPapel; track a.caracteres) {
+                    <option [value]="a.caracteres" [selected]="valorSelectAncho() === '' + a.caracteres">{{ a.etiqueta }}</option>
+                  }
+                  <option value="otro" [selected]="valorSelectAncho() === 'otro'">Personalizado…</option>
+                </select>
+              </div>
+              @if (valorSelectAncho() === 'otro') {
+                <div class="field">
+                  <label for="anchoCaracteres">Caracteres por línea</label>
+                  <input id="anchoCaracteres" type="number" formControlName="anchoCaracteres" min="24" max="64" aria-describedby="ancho-ayuda" />
+                </div>
+              }
+            </div>
+            <span id="ancho-ayuda" class="hint-msg">
+              Si las líneas del recibo se parten en dos, el ancho es mayor que el del papel: use la página de prueba para verificarlo.
+            </span>
+            <div class="form-row">
+              <div class="field">
+                <label for="lineasAvance">Líneas en blanco antes del corte</label>
+                <input id="lineasAvance" type="number" formControlName="lineasAvance" min="0" max="10" />
+              </div>
+              <div class="field">
+                <label for="copias">Copias por venta</label>
+                <select id="copias" formControlName="copias">
+                  <option [ngValue]="1">1</option>
+                  <option [ngValue]="2">2</option>
+                  <option [ngValue]="3">3</option>
+                </select>
+              </div>
+            </div>
+            <label class="check"><input type="checkbox" formControlName="corteAutomatico" /> Cortar el papel automáticamente</label>
+          </fieldset>
+
+          <fieldset class="tarjeta">
+            <legend class="tarjeta-titulo">Al registrar una venta</legend>
+            <label class="check"><input type="checkbox" formControlName="imprimirAlVender" /> Imprimir el recibo automáticamente</label>
+            <label class="check"><input type="checkbox" formControlName="abrirCajon" /> Abrir el cajón monedero</label>
+            <p class="hint-msg">El recibo siempre se puede reimprimir desde el historial de ventas.</p>
+          </fieldset>
+        </div>
+      </form>
+
+      <aside class="columna-preview" aria-labelledby="preview-titulo">
+        <div class="preview-encabezado">
+          <h2 id="preview-titulo" class="seccion-titulo">Vista previa</h2>
+          <button type="button" class="btn-icon" (click)="imprimirPrueba('recibo')" [disabled]="imprimiendo() !== null">
+            {{ imprimiendo() === 'recibo' ? 'Imprimiendo…' : 'Imprimir ejemplo' }}
+          </button>
+        </div>
+        @if (errorVista()) {
+          <div class="error" role="alert">{{ errorVista() }}</div>
+        }
+        <app-recibo-preview
+          [lineas]="lineas()"
+          [ancho]="ancho()"
+          [logoBase64]="logoBase64()"
+          [logoAncho]="logoAncho()"
+          [actualizando]="actualizandoVista()"
+        />
+      </aside>
+    </div>
+  }
+</div>

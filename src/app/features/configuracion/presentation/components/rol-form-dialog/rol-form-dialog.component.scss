@@ -1,0 +1,228 @@
+@use '../../styles/configuracion';
+
+// El formulario envuelve cuerpo y pie: debe permitir que el cuerpo haga scroll.
+.dialog-form {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.permisos {
+  border: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+
+  legend { padding: 0; margin-bottom: 0.25rem; }
+}
+
+.modulos {
+  display: flex;
+  flex-direction: column;
+  gap: 0.625rem;
+}
+
+.modulo {
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  background: var(--color-surface-alt);
+}
+
+.modulo-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  padding: 0.25rem 0.75rem 0.25rem 0.25rem;
+}
+
+.modulo-titulo {
+  margin: 0;
+  flex: 1;
+}
+
+.modulo-toggle {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  width: 100%;
+  padding: 0.5rem;
+  border: none;
+  border-radius: 6px;
+  background: none;
+  cursor: pointer;
+  font: inherit;
+  font-size: 0.8125rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--color-primary);
+  text-align: left;
+
+  &:hover { background: var(--color-surface); }
+  &:focus-visible { outline: 2px solid var(--color-primary); outline-offset: 1px; }
+}
+
+.chevron {
+  flex-shrink: 0;
+  transition: transform 0.15s ease;
+
+  &--abierto { transform: rotate(90deg); }
+}
+
+.modulo-contador {
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0;
+  padding: 0.0625rem 0.5rem;
+  border-radius: 999px;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  color: var(--color-text-muted);
+
+  &--activo {
+    border-color: var(--color-primary);
+    color: var(--color-primary);
+  }
+}
+
+.secciones {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  align-items: start;
+  gap: 0.625rem;
+  padding: 0.25rem 0.75rem 0.75rem;
+}
+
+.seccion {
+  border: 1px solid var(--color-border);
+  border-left: 3px solid var(--color-border);
+  border-radius: 6px;
+  background: var(--color-surface);
+  padding: 0.5rem 0.625rem;
+
+  &--activa { border-left-color: var(--color-primary); }
+}
+
+.seccion-header {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.625rem;
+  padding: 0.25rem;
+  cursor: pointer;
+
+  input {
+    margin-top: 0.15rem;
+    width: 16px;
+    height: 16px;
+    flex-shrink: 0;
+    accent-color: var(--color-primary);
+  }
+
+  .permiso-texto { flex: 1; }
+}
+
+.seccion-nombre {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--color-text);
+}
+
+.seccion-estado {
+  flex-shrink: 0;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  white-space: nowrap;
+  color: var(--color-text-muted);
+
+  &--activo { color: var(--color-primary); }
+}
+
+.opciones {
+  margin-top: 0.25rem;
+  margin-left: 0.875rem;
+  padding-left: 0.625rem;
+  border-left: 1px dashed var(--color-border);
+
+  // Componente no permitido: las opciones se ven atenuadas, pero marcar una lo permite.
+  &--inactivas .permiso:not(.permiso--bloqueado) .permiso-nombre { color: var(--color-text-muted); }
+}
+
+.permiso-lista {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.375rem;
+}
+
+.permiso {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.625rem;
+  padding: 0.375rem 0.25rem;
+  border-radius: 6px;
+  cursor: pointer;
+
+  &:hover { background: var(--color-surface); }
+
+  input {
+    margin-top: 0.15rem;
+    width: 16px;
+    height: 16px;
+    flex-shrink: 0;
+    accent-color: var(--color-primary);
+  }
+
+  &--bloqueado {
+    cursor: not-allowed;
+
+    .permiso-nombre { color: var(--color-text-muted); }
+  }
+}
+
+.permiso-texto {
+  display: flex;
+  flex-direction: column;
+  gap: 0.125rem;
+}
+
+.permiso-nombre {
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--color-text);
+}
+
+.permiso-desc {
+  font-size: 0.75rem;
+  color: var(--color-text-muted);
+}
+
+.contador {
+  margin-right: auto;
+  align-self: center;
+  font-size: 0.8125rem;
+  color: var(--color-text-muted);
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+// Subopción: depende de la opción de arriba (p. ej. Editar precio ← Editar productos).
+.subopcion {
+  margin-left: 1.5rem;
+  padding-left: 0.5rem;
+  border-left: 1px dashed var(--color-border);
+}

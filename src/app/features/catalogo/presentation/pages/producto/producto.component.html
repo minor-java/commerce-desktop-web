@@ -1,0 +1,183 @@
+﻿<div class="page">
+  <div class="toolbar">
+    <h2>Productos</h2>
+    <div class="toolbar-actions">
+      @if (puedeCrear()) {
+        <button class="btn-primary" (click)="crearNuevoProducto()">
+          Crear nuevo producto
+        </button>
+      }
+      @if (puedeEditar()) {
+        <button
+          class="btn-secondary"
+          [disabled]="!seleccionado()"
+          [attr.aria-disabled]="!seleccionado()"
+          (click)="editar()"
+        >
+          Editar
+        </button>
+      }
+    </div>
+  </div>
+
+  @if (error()) {
+    <div class="error" role="alert">{{ error() }}</div>
+  }
+
+  <div class="table-wrapper">
+    <table aria-label="Listado de productos">
+      <thead>
+        <tr>
+          <th scope="col" class="col-select" aria-label="Selección"></th>
+          <th scope="col">Descripción</th>
+          <th scope="col">Nombre</th>
+          <th scope="col">Contenido</th>
+          <th scope="col">Unidad</th>
+          <th scope="col">Precio venta</th>
+          <th scope="col">Código de barras</th>
+          <th scope="col">Estado</th>
+        </tr>
+        <tr class="filter-row">
+          <th></th>
+          <th></th>
+          <th>
+            <input
+              type="text"
+              [value]="filtroNombre()"
+              (input)="filtroNombre.set($any($event.target).value)"
+              (keydown.enter)="aplicarFiltros()"
+              placeholder="Filtrar..."
+              aria-label="Filtrar por nombre"
+            />
+          </th>
+          <th>
+            <input
+              type="text"
+              inputmode="decimal"
+              [value]="filtroContenido()"
+              (input)="actualizarFiltroContenido($event)"
+              (keydown.enter)="aplicarFiltros()"
+              placeholder="Filtrar..."
+              aria-label="Filtrar por contenido"
+            />
+          </th>
+          <th>
+            <input
+              type="text"
+              [value]="filtroUnidad()"
+              (input)="filtroUnidad.set($any($event.target).value)"
+              (keydown.enter)="aplicarFiltros()"
+              placeholder="Filtrar..."
+              aria-label="Filtrar por unidad"
+            />
+          </th>
+          <th>
+            <input
+              type="text"
+              inputmode="decimal"
+              [value]="filtroPrecioVenta()"
+              (input)="actualizarFiltroPrecioVenta($event)"
+              (keydown.enter)="aplicarFiltros()"
+              placeholder="Filtrar..."
+              aria-label="Filtrar por precio venta"
+            />
+          </th>
+          <th>
+            <input
+              type="text"
+              [value]="filtroCodigoBarra()"
+              (input)="filtroCodigoBarra.set($any($event.target).value)"
+              (keydown.enter)="aplicarFiltros()"
+              placeholder="Filtrar..."
+              aria-label="Filtrar por código de barras"
+            />
+          </th>
+          <th>
+            <select
+              [value]="filtroActivo()"
+              (change)="cambiarFiltroActivo($event)"
+              aria-label="Filtrar por estado"
+            >
+              <option value="">Todos</option>
+              <option value="true">Activo</option>
+              <option value="false">Desactivado</option>
+            </select>
+          </th>
+        </tr>
+      </thead>
+      <tbody>
+        @if (cargando()) {
+          <tr>
+            <td colspan="8" class="state-cell" aria-live="polite">Cargando...</td>
+          </tr>
+        } @else {
+          @for (item of productos(); track item.id) {
+            <tr
+              [class.selected]="seleccionado()?.id === item.id"
+              (click)="seleccionarFila(item)"
+              [attr.aria-selected]="seleccionado()?.id === item.id"
+            >
+              <td class="col-select">
+                <input
+                  type="radio"
+                  name="producto-seleccionado"
+                  [checked]="seleccionado()?.id === item.id"
+                  [attr.aria-label]="'Seleccionar ' + item.nombre"
+                  (change)="seleccionarFila(item)"
+                  (click)="$event.stopPropagation()"
+                />
+              </td>
+              <td>{{ descripcion(item) }}</td>
+              <td>{{ item.nombre }}</td>
+              <td>{{ item.presentacionValor ?? '-' }}</td>
+              <td>{{ item.presentacionUnidad ?? '-' }}</td>
+              <td>{{ item.precioVenta | number:'1.0-2' }}</td>
+              <td class="col-codigo">
+                @if (item.codigosBarras && item.codigosBarras.length > 0) {
+                  <span class="codigo-badge">{{ item.codigosBarras[0].codigo }}</span>
+                  @if (item.codigosBarras.length > 1) {
+                    <span class="codigo-extra">+{{ item.codigosBarras.length - 1 }}</span>
+                  }
+                  <button
+                    type="button"
+                    class="btn-icon btn-icon--detail"
+                    (click)="$event.stopPropagation(); abrirCodigosBarras(item)"
+                    [attr.aria-label]="'Ver códigos de barras de ' + item.nombre"
+                  >Ver</button>
+                } @else {
+                  <span class="col-empty">—</span>
+                }
+              </td>
+              <td>
+                <span class="badge" [class.badge--activo]="item.activo" [class.badge--inactivo]="!item.activo">
+                  {{ item.activo ? 'Activo' : 'Desactivado' }}
+                </span>
+              </td>
+            </tr>
+          } @empty {
+            <tr>
+              <td colspan="8" class="state-cell">Sin productos para mostrar.</td>
+            </tr>
+          }
+        }
+      </tbody>
+    </table>
+  </div>
+
+  <app-pagination
+    [page]="page()"
+    [size]="size()"
+    [totalRows]="totalRows()"
+    [totalPages]="totalPages()"
+    (pageChange)="cambiarPagina($event)"
+    (sizeChange)="cambiarTamano($event)"
+  ></app-pagination>
+</div>
+
+@if (productoCodigosBarras()) {
+  <app-codigos-barras-producto-dialog
+    [titulo]="descripcion(productoCodigosBarras()!)"
+    [codigos]="codigosBarrasDe(productoCodigosBarras()!)"
+    (cerrado)="cerrarCodigosBarras()"
+  />
+}

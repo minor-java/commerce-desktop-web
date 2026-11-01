@@ -1,0 +1,38 @@
+<section class="widget" aria-labelledby="ventas-title">
+  <h2 id="ventas-title" class="widget-title">Últimas ventas del mes</h2>
+
+  @if (cargando()) {
+    <div class="skeleton-list">
+      @for (_ of [1, 2, 3, 4, 5]; track $index) {
+        <div class="skeleton-row"></div>
+      }
+    </div>
+  } @else if (error()) {
+    <p class="widget-error" role="alert">{{ error() }}</p>
+  } @else if (ventas().length === 0) {
+    <p class="widget-empty">Sin ventas registradas este mes</p>
+  } @else {
+    <div class="table-wrap" role="region" aria-label="Últimas ventas" tabindex="0">
+      <table>
+        <thead>
+          <tr>
+            <th scope="col"># Venta</th>
+            <th scope="col">Fecha</th>
+            <th scope="col">Items</th>
+            <th scope="col">Total</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (v of ventas(); track v.id) {
+            <tr>
+              <td>{{ v.id }}</td>
+              <td>{{ v.fechaCreacion | date:'dd/MM HH:mm' }}</td>
+              <td>{{ v.cantidadItems }}</td>
+              <td class="td-money">$ {{ v.total | number:'1.0-0' }}</td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  }
+</section>

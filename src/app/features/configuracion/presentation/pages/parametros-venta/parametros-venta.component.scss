@@ -1,0 +1,33 @@
+@use '../../styles/configuracion';
+@use '../../styles/formulario-config';
+
+.toolbar { align-items: flex-start; }
+
+.columnas {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  gap: 1rem;
+  align-items: start;
+}
+
+.tarjeta-titulo {
+  float: left; // saca la leyenda del borde del fieldset
+  width: 100%;
+  padding: 0;
+
+  & + * { clear: both; }
+}
+
+.field-label {
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--color-text);
+}
+
+.checks {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.625rem 1.5rem;
+}
+
+.campo-corto { max-width: 200px; }

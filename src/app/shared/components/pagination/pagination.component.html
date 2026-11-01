@@ -1,0 +1,67 @@
+<div class="pg-bar" role="navigation" aria-label="Paginación de tabla">
+
+  <span class="pg-info" aria-live="polite" aria-atomic="true">
+    Mostrando
+    <strong>{{ rangeStart() }}–{{ rangeEnd() }}</strong>
+    de <strong>{{ totalRows() }}</strong> registros
+  </span>
+
+  <div class="pg-nav" role="group" aria-label="Páginas">
+    <button
+      class="pg-btn pg-btn--arrow"
+      (click)="goFirst()"
+      [disabled]="page() === 0"
+      aria-label="Primera página"
+    >«</button>
+
+    <button
+      class="pg-btn pg-btn--arrow"
+      (click)="goPrev()"
+      [disabled]="page() === 0"
+      aria-label="Página anterior"
+    >‹</button>
+
+    @for (p of visiblePages(); track $index) {
+      @if (p === null) {
+        <span class="pg-ellipsis" aria-hidden="true">…</span>
+      } @else {
+        <button
+          class="pg-btn"
+          [class.pg-btn--active]="p === page()"
+          (click)="goTo(p)"
+          [attr.aria-label]="'Página ' + (p + 1)"
+          [attr.aria-current]="p === page() ? 'page' : null"
+        >{{ p + 1 }}</button>
+      }
+    }
+
+    <button
+      class="pg-btn pg-btn--arrow"
+      (click)="goNext()"
+      [disabled]="page() >= totalPages() - 1"
+      aria-label="Página siguiente"
+    >›</button>
+
+    <button
+      class="pg-btn pg-btn--arrow"
+      (click)="goLast()"
+      [disabled]="page() >= totalPages() - 1"
+      aria-label="Última página"
+    >»</button>
+  </div>
+
+  <div class="pg-size">
+    <label class="pg-size__label" for="pg-size-select">Filas:</label>
+    <select
+      id="pg-size-select"
+      class="pg-size__select"
+      (change)="onSizeChange($event)"
+      [attr.aria-label]="'Filas por página, actualmente ' + size()"
+    >
+      @for (opt of pageSizeOptions(); track opt) {
+        <option [value]="opt" [selected]="opt === size()">{{ opt }}</option>
+      }
+    </select>
+  </div>
+
+</div>

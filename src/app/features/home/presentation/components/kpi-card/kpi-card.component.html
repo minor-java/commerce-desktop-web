@@ -1,0 +1,24 @@
+<article
+  class="card"
+  [class.card--blue]="color() === 'blue'"
+  [class.card--green]="color() === 'green'"
+  [class.card--indigo]="color() === 'indigo'"
+  [class.card--orange]="color() === 'orange'"
+  [class.card--rose]="color() === 'rose'"
+>
+  <span class="card-label">{{ titulo() }}</span>
+  @if (cargando()) {
+    <span class="card-skeleton" aria-label="Cargando"></span>
+  } @else {
+    <strong class="card-value">
+      @if (tipo() === 'money') {
+        $&nbsp;{{ (valor() ?? 0) | number:'1.0-0' }}
+      } @else {
+        {{ (valor() ?? 0) | number:'1.0-0' }}
+      }
+    </strong>
+  }
+  @if (subtitulo()) {
+    <span class="card-sub">{{ subtitulo() }}</span>
+  }
+</article>

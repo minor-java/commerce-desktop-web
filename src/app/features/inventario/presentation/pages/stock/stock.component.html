@@ -1,0 +1,154 @@
+﻿<div class="page">
+  <div class="toolbar">
+    <h2>Inventario</h2>
+    <button class="btn-limpiar" type="button" (click)="limpiarFiltros()">
+      Limpiar filtros
+    </button>
+  </div>
+
+  @if (puedeVerResumen()) {
+    <div class="resumen-secciones">
+      <app-resumen-stock-cards titulo="General" [resumen]="resumen()" />
+      <app-resumen-stock-cards titulo="Colmena" [resumen]="resumenColmena()" />
+      <app-resumen-stock-cards titulo="Cristalería" [resumen]="resumenCristaleria()" />
+    </div>
+  }
+
+  @if (error()) {
+    <div class="error" role="alert">{{ error() }}</div>
+  }
+
+  <div class="table-wrapper">
+    <table aria-label="Listado de stock e inventario">
+      <thead>
+        <tr>
+          <th scope="col">Código barra</th>
+          <th scope="col">Stock disponible</th>
+          <th scope="col">Stock en combos</th>
+          <th scope="col">Stock total</th>
+          <th scope="col">Descripción</th>
+          <th scope="col">Nombre</th>
+          <th scope="col">Contenido</th>
+          <th scope="col">Unidad</th>
+          <th scope="col">Precio venta</th>
+          <th scope="col">Costo promedio</th>
+          <th scope="col">Estado</th>
+        </tr>
+        <tr class="filter-row">
+          <th>
+            <input
+              type="text"
+              [value]="filtroCodigoBarra()"
+              (input)="filtroCodigoBarra.set($any($event.target).value)"
+              (keydown.enter)="aplicarFiltroCodigo()"
+              placeholder="Filtrar..."
+              aria-label="Filtrar por código de barra"
+            />
+          </th>
+          <th></th>
+          <th></th>
+          <th></th>
+          <th>
+            <input
+              type="text"
+              [value]="filtroNombre()"
+              (input)="filtroNombre.set($any($event.target).value)"
+              (keydown.enter)="aplicarFiltros()"
+              placeholder="Filtrar..."
+              aria-label="Filtrar por nombre"
+            />
+          </th>
+          <th></th>
+          <th>
+            <input
+              type="text"
+              inputmode="decimal"
+              [value]="filtroPresentacionValor()"
+              (input)="actualizarFiltroPresentacionValor($event)"
+              (keydown.enter)="aplicarFiltros()"
+              placeholder="Filtrar..."
+              aria-label="Filtrar por contenido"
+            />
+          </th>
+          <th>
+            <input
+              type="text"
+              [value]="filtroPresentacionUnidad()"
+              (input)="filtroPresentacionUnidad.set($any($event.target).value)"
+              (keydown.enter)="aplicarFiltros()"
+              placeholder="Filtrar..."
+              aria-label="Filtrar por unidad"
+            />
+          </th>
+          <th>
+            <input
+              type="text"
+              inputmode="decimal"
+              [value]="filtroPrecioVenta()"
+              (input)="actualizarFiltroPrecioVenta($event)"
+              (keydown.enter)="aplicarFiltros()"
+              placeholder="Filtrar..."
+              aria-label="Filtrar por precio venta"
+            />
+          </th>
+          <th></th>
+          <th>
+            <select
+              [value]="filtroActivo()"
+              (change)="cambiarFiltroActivo($event)"
+              aria-label="Filtrar por estado"
+            >
+              <option value="">Todos</option>
+              <option value="true">Activo</option>
+              <option value="false">Desactivado</option>
+            </select>
+          </th>
+        </tr>
+      </thead>
+      <tbody>
+        @if (cargando()) {
+          <tr>
+            <td colspan="11" class="state-cell" aria-live="polite">Cargando...</td>
+          </tr>
+        } @else {
+          @for (item of items(); track item.id) {
+            <tr>
+              <td>{{ item.codigoBarra ?? '-' }}</td>
+              <td>{{ item.stock | number:'1.0-2' }}</td>
+              <td>{{ item.stockCombo | number:'1.0-2' }}</td>
+              <td>{{ (item.stock + item.stockCombo) | number:'1.0-2' }}</td>
+              <td>{{ descripcion(item) }}</td>
+              <td>{{ item.nombre ?? '-' }}</td>
+              <td>{{ item.presentacionValor != null ? (item.presentacionValor | number:'1.0-2') : '-' }}</td>
+              <td>{{ item.presentacionUnidad ?? '-' }}</td>
+              <td>{{ item.precioVenta != null ? (item.precioVenta | number:'1.0-2') : '-' }}</td>
+              <td>{{ item.costoPromedio != null ? (item.costoPromedio | number:'1.0-2') : '-' }}</td>
+              <td>
+                <span
+                  class="badge"
+                  [class.badge--activo]="item.activo"
+                  [class.badge--inactivo]="!item.activo"
+                >
+                  {{ item.activo ? 'Activo' : 'Desactivado' }}
+                </span>
+              </td>
+            </tr>
+          } @empty {
+            <tr>
+              <td colspan="11" class="state-cell">Sin registros para mostrar.</td>
+            </tr>
+          }
+        }
+      </tbody>
+    </table>
+  </div>
+
+  <app-pagination
+    [page]="page()"
+    [size]="size()"
+    [totalRows]="totalRows()"
+    [totalPages]="totalPages()"
+    (pageChange)="cambiarPagina($event)"
+    (sizeChange)="cambiarTamano($event)"
+  ></app-pagination>
+</div>
